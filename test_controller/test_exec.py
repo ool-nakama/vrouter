@@ -14,9 +14,8 @@ import time
 import yaml
 
 import functest.utils.functest_logger as ft_logger
-from functest.testcases.vnf.vRouter.utilvnf import utilvnf
-from functest.testcases.vnf.vRouter.vnf_controller.vnf_controller import (
-    VNF_controller)
+from vrouter.utilvnf import utilvnf
+from vrouter.vnf_controller.vnf_controller import VNF_controller
 
 """ logging configuration """
 logger = ft_logger.Logger("vRouter.test_exec").getLogger()

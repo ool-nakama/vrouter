@@ -1,14 +1,14 @@
 general:
     directories:
         # Relative to the path where the repo is cloned:
-        dir_vping:         testcases/OpenStack/vPing/
-        dir_odl:           testcases/Controllers/ODL/
-        dir_rally:         testcases/OpenStack/rally/
-        dir_tempest_cases: testcases/OpenStack/tempest/custom_tests/
-        dir_vIMS:          testcases/vnf/vIMS/
-        dir_vRouter:       testcases/vnf/vRouter/
-        dir_onos:          testcases/Controllers/ONOS/Teston/
-        dir_onos_sfc:           testcases/Controllers/ONOS/Sfc/
+        dir_vping:         functest/opnfv_tests/OpenStack/vPing/
+        dir_odl:           functest/opnfv_tests/Controllers/ODL/
+        dir_rally:         functest/opnfv_tests/OpenStack/rally/
+        dir_tempest_cases: functest/opnfv_tests/OpenStack/tempest/custom_tests/
+        dir_vIMS:          functest/opnfv_tests/vnf/vIMS/
+        dir_onos:          functest/opnfv_tests/Controllers/ONOS/Teston/
+        dir_onos_sfc:      functest/opnfv_tests/Controllers/ONOS/Sfc/
+        dir_vRouter:       functest/opnfv_tests/vnf/vRouter/
 
         # Absolute path
         dir_repos:          /home/opnfv/repos
@@ -31,8 +31,8 @@ general:
         dir_rally_res:      /home/opnfv/functest/results/rally/
         dir_functest_data:  /home/opnfv/functest/data
         dir_vIMS_data:      /home/opnfv/functest/data/vIMS
-        dir_vRouter_data:   /home/opnfv/functest/data/vRouter
         dir_rally_inst:     /home/opnfv/.rally
+        dir_vRouter_data:   /home/opnfv/functest/data/vRouter
 
     openstack:
         snapshot_file: /home/opnfv/functest/conf/openstack_snapshot.yaml
@@ -58,6 +58,7 @@ general:
 healthcheck:
     disk_image: /home/opnfv/functest/data/cirros-0.3.4-x86_64-disk.img
     disk_format: qcow2
+    wait_time: 60
 
 vping:
     ping_timeout:   200
@@ -204,7 +205,6 @@ vRouter:
             reference_vnf_image_id: ""
             target_vnf_flavor_id: ""
             target_vnf_image_id: ""
-
 ONOS:
     general:
         onosbench_username: 'root'

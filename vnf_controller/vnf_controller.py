@@ -14,11 +14,10 @@ import time
 import yaml
 
 import functest.utils.functest_logger as ft_logger
-from functest.testcases.vnf.vRouter.utilvnf import utilvnf
-from functest.testcases.vnf.vRouter.vnf_controller.checker import Checker
-from functest.testcases.vnf.vRouter.vnf_controller.command_generator import (
-    Command_generator)
-from functest.testcases.vnf.vRouter.vnf_controller.ssh_client import SSH_Client
+from vrouter.utilvnf import utilvnf
+from vrouter.vnf_controller.checker import Checker
+from vrouter.vnf_controller.command_generator import Command_generator
+from vrouter.vnf_controller.ssh_client import SSH_Client
 
 """ logging configuration """
 logger = ft_logger.Logger("vRouter.vnf_controller").getLogger()

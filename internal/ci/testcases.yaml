@@ -92,6 +92,9 @@ tiers:
                 dependencies:
                     installer: ''
                     scenario: 'odl'
+                run:
+                    module: 'functest.opnfv_tests.Controllers.ODL.OpenDaylightTesting'
+                    class: 'ODLTestCases'
 
             -
                 name: onos
@@ -216,7 +219,7 @@ tiers:
                 dependencies:
                     installer: 'fuel'
                     scenario: '^((?!bgpvpn|noha).)*$'
-                    
+
     -
         name: openstack
         order: 4
@@ -264,7 +267,7 @@ tiers:
                 dependencies:
                     installer: ''
                     scenario: '(ocl)|(nosdn)|^(os-odl)((?!bgpvpn).)*$'
-            -
+
                 name: vrouter
                 criteria: 'status == "PASS"'
                 blocking: false
@@ -273,3 +276,6 @@ tiers:
                 dependencies:
                     installer: ''
                     scenario: ''
+                run:
+                    module: 'functest.opnfv_tests.vnf.vRouter.vRouterTesting'
+                    class: 'vRouterTestCases'
