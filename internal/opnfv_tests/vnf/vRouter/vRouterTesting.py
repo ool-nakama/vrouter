@@ -5,12 +5,12 @@
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
 
-from functest.core import TestCasesBase
 import sys
-sys.path.append('/home/opnfv/repos/vrouter')
-from vRouter import vRouter
 import functest.utils.functest_logger as ft_logger
-import functest.utils.openstack_utils as op_utils
+from vRouter import vRouter
+from functest.core import TestCasesBase
+sys.path.append('/home/opnfv/repos/vrouter')
+
 
 class vRouterTestCases(TestCasesBase.TestCasesBase):
 
@@ -36,7 +36,5 @@ class vRouterTestCases(TestCasesBase.TestCasesBase):
         self.criteria = result_data['status']
         self.details = result_data['results']
 
-
     def run(self):
         return self.main()
-

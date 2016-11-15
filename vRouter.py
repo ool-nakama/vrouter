@@ -26,7 +26,6 @@ import novaclient.client as nvclient
 from neutronclient.v2_0 import client as ntclient
 
 
-import functest.utils.functest_logger as ft_logger
 import functest.utils.functest_utils as functest_utils
 import functest.utils.openstack_utils as os_utils
 
@@ -107,15 +106,16 @@ TPLGY_BP_NAME = functest_yaml.get("vRouter").get("vnf_topology").get(
 REBOOT_WAIT = functest_yaml.get("vRouter").get(
     "general").get("reboot_wait")
 
+
 class vRouter:
-    def __init__(self,logger):
+    def __init__(self, logger):
 
         """ logging configuration """
         self.logger = logger
 
         REPO_PATH = os.environ['repos_dir'] + '/functest/'
         if not os.path.exists(REPO_PATH):
-            self.logger.error("Functest repository directory not found '%s'"  % REPO_PATH)
+            self.logger.error("Repos directory not found '%s'" % REPO_PATH)
             exit(-1)
 
         self.testcase_start_time = time.time()
@@ -166,13 +166,11 @@ class vRouter:
 
         return image
 
-
     def set_result(self, step_name, duration=0, result=""):
         self.results[step_name] = {
             'duration': duration,
             'result': result
         }
-
 
     def set_resultdata(self, start_time, stop_time, status, results):
         result_data = {}
@@ -190,14 +188,13 @@ class vRouter:
         stop_time = time.time()
         self.logger.error(error_msg)
         self.set_result(step_name,
-                   0,
-                   error_msg)
+                        0,
+                        error_msg)
         status = "FAIL"
         # in case of failure starting and stoping time are not correct
         result_data = self.set_resultdata(self.testcase_start_time, stop_time,
-                                     status, self.results)
+                                          status, self.results)
         return result_data
-
 
     def test_vRouter(self, cfy):
         credentials = {}
@@ -226,7 +223,8 @@ class vRouter:
                             vRouter_data_path,
                             branch=TEST_DATA['branch'])
 
-        test_config_file = open(VNF_DATA_DIR + "opnfv-vnf-data/test_config.yaml",
+        testcfg_yaml_dir = "opnfv-vnf-data/test_config.yaml"
+        test_config_file = open(VNF_DATA_DIR + testcfg_yaml_dir,
                                 'r')
         test_config_yaml = yaml.safe_load(test_config_file)
         test_config_file.close()
@@ -281,8 +279,8 @@ class vRouter:
 
         if result:
             self.set_result("testing_vRouter",
-                       duration,
-                       "OK")
+                            duration,
+                            "OK")
 
             return self.set_resultdata(self.testcase_start_time, end_time_ts,
                                        "PASS", self.results)
@@ -302,23 +300,23 @@ class vRouter:
         self.nv_cresds = os_utils.get_credentials("nova")
         self.nt_cresds = os_utils.get_credentials("neutron")
 
-        self.logger.info("Prepare OpenStack plateform (create tenant and user)")
+        self.logger.info("Prepare OpenStack plateform(create tenant and user)")
         keystone = ksclient.Client(**self.ks_cresds)
 
         user_id = os_utils.get_user_id(keystone,
                                        self.ks_cresds['username'])
         if user_id == '':
             return self.step_failure("init",
-                         "Error : Failed to get id of " + self.ks_cresds['username'])
+                                     "Error : Failed to get id of " +
+                                     self.ks_cresds['username'])
 
         tenant_id = os_utils.create_tenant(keystone,
                                            TENANT_NAME,
                                            TENANT_DESCRIPTION)
-
         if tenant_id == '':
-           return self.step_failure("init",
-                         "Error : Failed to create " + TENANT_NAME + " tenant")
-
+            return self.step_failure("init",
+                                     "Error : Failed to create " +
+                                     TENANT_NAME + " tenant")
         roles_name = [
             "admin",
             "Admin"
@@ -330,7 +328,8 @@ class vRouter:
                                                role_name)
 
         if role_id == '':
-            self.logger.error("Error : Failed to get id for %s role" % role_name)
+            self.logger.error("Error : Failed to get id for %s role" %
+                              role_name)
 
         if not os_utils.add_role_user(keystone,
                                       user_id,
@@ -338,7 +337,7 @@ class vRouter:
                                       tenant_id):
 
             self.logger.error("Error : Failed to add %s on tenant" %
-                         self.ks_cresds['username'])
+                              self.ks_cresds['username'])
 
         user_id = os_utils.create_user(keystone,
                                        TENANT_NAME,
@@ -365,12 +364,12 @@ class vRouter:
 
         self.logger.info("Upload some OS images if it doesn't exist")
         glance_endpoint = keystone.service_catalog.url_for(
-                                                       service_type='image',
-                                                       endpoint_type='publicURL')
+                                            service_type='image',
+                                            endpoint_type='publicURL')
 
         self.glance = glclient.Client(1,
-                                 glance_endpoint,
-                                 token=keystone.auth_token)
+                                      glance_endpoint,
+                                      token=keystone.auth_token)
 
         for img in IMAGES.keys():
             image_name = IMAGES[img]['image_name']
@@ -383,17 +382,14 @@ class vRouter:
                 self.logger.info("""%s image doesn't exist on glance repository. Try
                 downloading this image and upload on glance !""" % image_name)
                 image_id = self.download_and_add_image_on_glance(self.glance,
-                                                            image_name,
-                                                            image_url)
+                                                                 image_name,
+                                                                 image_url)
 
             if image_id == '':
                 return self.step_failure(
                     "init",
                     "Error : Failed to find or upload required OS "
                     "image for this deployment")
-
-        nova = nvclient.Client("2",
-                               **self.nv_cresds)
 
         self.logger.info("Update security group quota for this tenant")
         self.neutron = ntclient.Client(**self.nt_cresds)
@@ -406,25 +402,26 @@ class vRouter:
         if not result:
             return self.step_failure(
                 "init",
-                "Failed to update security group quota for tenant " + TENANT_NAME)
+                "Failed to update security group quota for tenant " +
+                TENANT_NAME)
 
         end_time_ts = time.time()
         duration = round(end_time_ts - start_time_ts,
                          1)
 
         self.set_result("init",
-                   duration,
-                   "OK")
+                        duration,
+                        "OK")
 
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
 
     def deploy_cloudify(self, cfy):
 
-        username=self.ks_cresds['username']
-        password=self.ks_cresds['password']
-        tenant_name=self.ks_cresds['tenant_name']
-        auth_url=self.ks_cresds['auth_url']
+        username = self.ks_cresds['username']
+        password = self.ks_cresds['password']
+        tenant_name = self.ks_cresds['tenant_name']
+        auth_url = self.ks_cresds['auth_url']
 
         cfy.set_credentials(username,
                             password,
@@ -456,8 +453,9 @@ class vRouter:
                                                             8196)
 
         if flavor_id == '':
-            return self.step_failure("making_orchestrator",
-                         "Failed to find required flavor for this deployment")
+            return self.step_failure(
+                        "making_orchestrator",
+                        "Failed to find required flavor for this deployment")
 
         cfy.set_flavor_id(flavor_id)
 
@@ -473,14 +471,15 @@ class vRouter:
 
         if image_id == '':
             return self.step_failure(
-                "making_orchestrator",
-                "Error : Failed to find required OS image for cloudify manager")
+              "making_orchestrator",
+              "Error : Failed to find required OS image for cloudify manager")
 
         cfy.set_image_id(image_id)
 
         ext_net = os_utils.get_external_net(self.neutron)
         if not ext_net:
-            return self.step_failure("making_orchestrator",
+            return self.step_failure(
+                         "making_orchestrator",
                          "Failed to get external network")
 
         cfy.set_external_network_name(ext_net)
@@ -511,7 +510,7 @@ class vRouter:
         error = cfy.deploy_manager()
         if error:
             return self.step_failure("making_orchestrator",
-                         error)
+                                     error)
 
         end_time_ts = time.time()
         duration = round(end_time_ts - start_time_ts,
@@ -519,8 +518,8 @@ class vRouter:
         self.logger.info("Cloudify deployment duration:'%s'" % duration)
 
         self.set_result("making_orchestrator",
-                   duration,
-                   "OK")
+                        duration,
+                        "OK")
 
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
@@ -550,10 +549,11 @@ class vRouter:
         if reference_vnf_flavor_id == '':
             for requirement in TPLGY_REQUIERMENTS:
                 if requirement == 'ram_min':
-                    reference_vnf_flavor_id = os_utils.get_flavor_id_by_ram_range(
-                        nova,
-                        TPLGY_REQUIERMENTS['ram_min'],
-                        8196)
+                    reference_vnf_flavor_id = \
+                        os_utils.get_flavor_id_by_ram_range(
+                            nova,
+                            TPLGY_REQUIERMENTS['ram_min'],
+                            8196)
 
             self.logger.info("reference_vnf_flavor_id id search set")
 
@@ -571,8 +571,8 @@ class vRouter:
 
         if image_id == '':
             return self.step_failure(
-                "making_testTopology",
-                "Error : Failed to find required OS image for cloudify manager")
+               "making_testTopology",
+               "Error : Failed to find required OS image for cloudify manager")
 
         if reference_vnf_image_id == '':
             tplgy.set_reference_vnf_image_id(image_id)
@@ -584,8 +584,9 @@ class vRouter:
 
         ext_net = os_utils.get_external_net(self.neutron)
         if not ext_net:
-            return self.step_failure("making_testTopology",
-                         "Failed to get external network")
+            return self.step_failure(
+                   "making_testTopology",
+                   "Failed to get external network")
 
         tplgy.set_external_network_name(ext_net)
 
@@ -607,20 +608,20 @@ class vRouter:
 
         # deploy
         ret = tplgy.deploy_vnf(TPLGY_BLUEPRINT,
-                                 TPLGY_BP_NAME,
-                                 TPLGY_DEPLOY_NAME)
+                               TPLGY_BP_NAME,
+                               TPLGY_DEPLOY_NAME)
         if ret:
-            self.logger.error("Error :deployment testtopology :%s",ret)
+            self.logger.error("Error :deployment testtopology :%s", ret)
             return self.step_failure("making_testTopology",
-                         "Failed to deploy test topology")
+                                     "Failed to deploy test topology")
 
         end_time_ts = time.time()
         duration = round(end_time_ts - start_time_ts,
                          1)
         self.logger.info("vRouter VNF deployment duration:'%s'" % duration)
         self.set_result("making_testTopology",
-                   duration,
-                   "OK")
+                        duration,
+                        "OK")
 
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
@@ -633,36 +634,39 @@ class vRouter:
 
         # ############## TNENANT CLEANUP ################
 
-        self.logger.info("Removing %s tenant .." % CFY_INPUTS['keystone_tenant_name'])
+        self.logger.info("Removing %s tenant .." %
+                         CFY_INPUTS['keystone_tenant_name'])
 
         keystone = ksclient.Client(**self.ks_cresds)
         tenant_id = os_utils.get_tenant_id(keystone,
                                            CFY_INPUTS['keystone_tenant_name'])
         if tenant_id == '':
-            self.logger.error("Error : Failed to get id of %s tenant" %
+            self.logger.error(
+                         "Error : Failed to get id of %s tenant" %
                          CFY_INPUTS['keystone_tenant_name'])
         else:
             resulut = os_utils.delete_tenant(keystone,
                                              tenant_id)
             if not resulut:
-                self.logger.error("Error : Failed to remove %s tenant" %
-                             CFY_INPUTS['keystone_tenant_name'])
+                self.logger.error(
+                       "Error : Failed to remove %s tenant" %
+                       CFY_INPUTS['keystone_tenant_name'])
 
-        self.logger.info("Removing %s user .." % CFY_INPUTS['keystone_username'])
+        self.logger.info("Removing %s user .." %
+                         CFY_INPUTS['keystone_username'])
 
         user_id = os_utils.get_user_id(keystone,
                                        CFY_INPUTS['keystone_username'])
 
         if user_id == '':
             self.logger.error("Error : Failed to get id of %s user" %
-                         CFY_INPUTS['keystone_username'])
+                              CFY_INPUTS['keystone_username'])
         else:
             result = os_utils.delete_user(keystone,
                                           user_id)
             if not result:
                 self.logger.error("Error : Failed to remove %s user" %
-                             CFY_INPUTS['keystone_username'])
-
+                                  CFY_INPUTS['keystone_username'])
 
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
@@ -696,7 +700,6 @@ class vRouter:
         if result_data["status"] == "FAIL":
             return result_data
 
-
         # ############### VNF TOPOLOGY DEPLOYMENT ################
 
         result_data = self.deploy_testToplogy(tplgy)
@@ -712,6 +715,3 @@ class vRouter:
         self.clean_enviroment(cfy)
 
         return result_data
-
-if __name__ == '__main__':
-    self.main()
