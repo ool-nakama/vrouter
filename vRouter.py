@@ -58,7 +58,7 @@ f.close()
 
 # Cloudify parameters
 VNF_DIR = functest_yaml.get("general").get("directories").get(
-          "dir_vRouter") + "/"
+          "dir_repo_vRouter") + "/"
 VNF_DATA_DIR = functest_yaml.get("general").get(
     "directories").get("dir_vRouter_data") + "/"
 DB_URL = functest_yaml.get("results").get("test_db_url")
