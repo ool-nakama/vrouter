@@ -5,12 +5,9 @@
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
 
-import sys
 import functest.utils.functest_logger as ft_logger
-from vRouter import vRouter
 from functest.core import TestCasesBase
-sys.path.append('/home/opnfv/repos/vrouter')
-
+from vrouter.vRouter import vRouter
 
 class vRouterTestCases(TestCasesBase.TestCasesBase):
 
