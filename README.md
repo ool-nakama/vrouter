@@ -8,7 +8,7 @@ Firstly, I explain the background of our Proroposal. ETSI Proposed to NFV Archit
  
 There are problems of VNF testing. VNF Appliance is still developing, so there is no standard .Performance and stability is depend on flavors. Many test patterns are required in VNF testing more than hardware appliance. Because number of test pattern is depend on variation of resources, and variation of virtualization platform.
  
-##2. How to test VNF
+##2. How to do VNF testing
  1. Test System is based on functest.
  2. VNF Testing topology was made by cloudify using blueprint.Target VNF and reference
       VNF are booted and Network are made.
