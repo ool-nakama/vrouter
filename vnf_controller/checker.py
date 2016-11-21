@@ -18,13 +18,13 @@ from jinja2 import Environment, FileSystemLoader
 import functest.utils.functest_logger as ft_logger
 
 """ logging configuration """
-logger = ft_logger.Logger("vRouter.cecker").getLogger()
+logger = ft_logger.Logger("vRouter.checker").getLogger()
 logger.setLevel(logging.DEBUG)
 
 
 class Checker:
     def __init__(self):
-        logger.debug("init cecker")
+        logger.debug("init checker")
 
     def load_check_rule(self, rule_file_dir, rule_file_name, parameter):
         loader = FileSystemLoader(rule_file_dir,
