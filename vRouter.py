@@ -30,6 +30,7 @@ import functest.utils.functest_utils as functest_utils
 import functest.utils.openstack_utils as os_utils
 
 from test_controller.test_exec import Test_exec
+from test_controller.performance_test_exec import Performance_test_exec
 from orchestrator import orchestrator
 from topology import topology
 from utilvnf import utilvnf
@@ -106,6 +107,24 @@ TPLGY_BP_NAME = functest_yaml.get("vRouter").get("vnf_topology").get(
 REBOOT_WAIT = functest_yaml.get("vRouter").get(
     "general").get("reboot_wait")
 
+CONFIG_VNF_TEST_YAML = VNF_DATA_DIR + "opnfv-vnf-data/config_vnf_test.yaml"
+with open(CONFIG_VNF_TEST_YAML) as f:
+    vnftest_yaml = yaml.safe_load(f)
+f.close()
+
+VNF_TEST_IMAGES = vnftest_yaml.get("general").get("images")
+IMAGES.update(VNF_TEST_IMAGES)
+
+PERFORMANCE_TPLGY_BLUEPRINT = vnftest_yaml.get("test_topology").get(
+    "performance_test_topology").get("blueprint")
+
+PERFORMANCE_TPLGY_BP_NAME = vnftest_yaml.get("test_topology").get(
+    "performance_test_topology").get("blueprint").get(
+    "blueprint_name")
+
+PERFORMANCE_TPLGY_DEPLOY_NAME = vnftest_yaml.get("test_topology").get(
+    "performance_test_topology").get("blueprint").get(
+    "deployment_name")
 
 class vRouter:
     def __init__(self, logger):
@@ -196,24 +215,23 @@ class vRouter:
                                           status, self.results)
         return result_data
 
-    def test_vRouter(self, cfy):
-        credentials = {}
-        credentials["username"] = TENANT_NAME
-        credentials["password"] = TENANT_NAME
-        credentials["tenant_name"] = TENANT_NAME
-        credentials["auth_url"] = os.environ['OS_AUTH_URL']
-        credentials["region_name"] = os.environ['OS_REGION_NAME']
-        util_info = {}
-        util_info["credentials"] = credentials
-        util_info["cfy"] = cfy
-        util_info["vnf_data_dir"] = VNF_DATA_DIR
+    def init_vRouter_test(self, cfy):
+        credentials = {"username": TENANT_NAME,
+                       "password": TENANT_NAME,
+                       "auth_url": os.environ['OS_AUTH_URL'],
+                       "tenant_name": TENANT_NAME,
+                       "region_name": os.environ['OS_REGION_NAME']}
 
-        util = utilvnf(self.logger)
-        util.set_credentials(credentials["username"],
-                             credentials["password"],
-                             credentials["auth_url"],
-                             credentials["tenant_name"],
-                             credentials["region_name"])
+        self.util_info = {"credentials": credentials,
+                          "cfy": cfy,
+                          "vnf_data_dir": VNF_DATA_DIR}
+
+        self.util = utilvnf(self.logger)
+        self.util.set_credentials(credentials["username"],
+                                  credentials["password"],
+                                  credentials["auth_url"],
+                                  credentials["tenant_name"],
+                                  credentials["region_name"])
 
         self.logger.debug("Downloading the test data.")
         vRouter_data_path = VNF_DATA_DIR + "opnfv-vnf-data/"
@@ -226,40 +244,40 @@ class vRouter:
         testcfg_yaml_dir = "opnfv-vnf-data/test_config.yaml"
         test_config_file = open(VNF_DATA_DIR + testcfg_yaml_dir,
                                 'r')
-        test_config_yaml = yaml.safe_load(test_config_file)
+        self.test_config_yaml = yaml.safe_load(test_config_file)
         test_config_file.close()
 
-        target_vnf_name = test_config_yaml["target_vnf_name"]
-        test_protocol = test_config_yaml["test_protocol_kind"]
-        test_list = test_config_yaml[test_protocol]
+        self.cfy_manager_ip = self.util.get_cfy_manager_address(cfy,
+                                                                VNF_DATA_DIR)
 
-        cfy_manager_ip = util.get_cfy_manager_address(cfy,
-                                                      VNF_DATA_DIR)
+        self.logger.debug("cfy manager address : %s" % self.cfy_manager_ip)
 
-        self.logger.debug("cfy manager address : %s" % cfy_manager_ip)
+    def function_test_vRouter(self, cfy, function_test_config):
+        target_vnf_name = function_test_config["target_vnf_name"]
+        test_protocol = function_test_config["test_protocol_kind"]
+        test_list = function_test_config[test_protocol]
 
-        vnf_info_list = util.get_vnf_info_list(cfy_manager_ip,
-                                               TPLGY_DEPLOY_NAME,
-                                               target_vnf_name)
+        vnf_info_list = self.util.get_vnf_info_list(self.cfy_manager_ip,
+                                                    TPLGY_DEPLOY_NAME,
+                                                    target_vnf_name)
 
         self.logger.debug("request vnf's reboot.")
-
-        util.request_vnf_reboot(vnf_info_list)
+        self.util.request_vnf_reboot(vnf_info_list)
         time.sleep(REBOOT_WAIT)
 
-        target_vnf = util.get_target_vnf(vnf_info_list)
+        target_vnf = self.util.get_target_vnf(vnf_info_list)
         if target_vnf is None:
             return self.step_failure(
                 "testing_vRouter",
                 "Error : target_vnf is None.")
 
-        reference_vnf_list = util.get_reference_vnf_list(vnf_info_list)
+        reference_vnf_list = self.util.get_reference_vnf_list(vnf_info_list)
         if len(reference_vnf_list) == 0:
             return self.step_failure(
                 "testing_vRouter",
                 "Error : reference_vnf_list is empty.")
 
-        test_exec = Test_exec(util_info)
+        test_exec = Test_exec(self.util_info)
 
         # start test
         start_time_ts = time.time()
@@ -271,18 +289,160 @@ class vRouter:
                                reference_vnf_list,
                                test_protocol,
                                test_list)
+        result = True
 
         end_time_ts = time.time()
         duration = round(end_time_ts - start_time_ts,
                          1)
         self.logger.info("vRouter test duration :'%s'" % duration)
 
+        self.end_time_ts = end_time_ts
+
         if result:
             self.set_result("testing_vRouter",
                             duration,
                             "OK")
 
-            return self.set_resultdata(self.testcase_start_time, end_time_ts,
+        self.vnf_info_list = vnf_info_list
+
+        return result
+
+    def performance_test_vRouter(self, cfy, performance_test_config):
+        input_parameter = performance_test_config["input_parameter"]
+
+        vnf_info_list = self.util.get_vnf_info_list_for_performance_test(
+                                                                self.cfy_manager_ip,
+                                                                PERFORMANCE_TPLGY_DEPLOY_NAME,
+                                                                performance_test_config)
+
+        target_vnf = self.util.get_target_vnf(vnf_info_list)
+        if target_vnf is None:
+            return self.step_failure(
+                "testing_vRouter",
+                "Error : target_vnf is None.")
+
+        send_tester_vm = self.util.get_send_tester_vm(vnf_info_list)
+        if send_tester_vm is None:
+            return self.step_failure(
+                "testing_vRouter",
+                "Error : send_tester_vm is None.")
+
+        receive_tester_vm = self.util.get_receive_tester_vm(vnf_info_list)
+        if receive_tester_vm is None:
+            return self.step_failure(
+                "testing_vRouter",
+                "Error : receive_tester_vm is None.")
+
+        self.logger.debug("request vnf's reboot.")
+        self.util.request_vnf_reboot(vnf_info_list)
+        time.sleep(120)
+
+        test_exec = Performance_test_exec(self.util_info)
+
+        # start test
+        start_time_ts = time.time()
+        self.logger.info("vRouter performance test Start Time:'%s'" % (
+            datetime.datetime.fromtimestamp(start_time_ts).strftime(
+                '%Y-%m-%d %H:%M:%S')))
+
+        result = test_exec.run(target_vnf,
+                               send_tester_vm,
+                               receive_tester_vm,
+                               input_parameter)
+        result = True
+
+        end_time_ts = time.time()
+        duration = round(end_time_ts - start_time_ts,
+                         1)
+        self.logger.info("vRouter test duration :'%s'" % duration)
+
+        self.end_time_ts = end_time_ts
+
+        if result:
+            self.set_result("testing_vRouter",
+                            duration,
+                            "OK")
+
+        self.logger.debug("request vm's delete.")
+        self.util.request_vm_delete(vnf_info_list)
+
+        return result
+
+    def test_vRouter(self, cfy):
+        result = False
+
+        test_config_list = self.test_config_yaml["test_config_list"]
+
+        for test_config in test_config_list:
+            if test_config["topology_type"] == "function_test":
+                # FUNCTION TEST TOPOLOGY INITIALISATION
+                function_tplgy = topology(TPLGY_INPUTS,
+                                          cfy,
+                                          self.logger)
+
+                result_data = self.init_function_testToplogy(function_tplgy)
+                if result_data["status"] == "FAIL":
+                    return result_data
+
+                # FUNCTION TEST TOPOLOGY DEPLOYMENT
+                blueprint_info = {"url": TPLGY_BLUEPRINT,
+                                  "blueprint_name": TPLGY_BP_NAME,
+                                  "deployment_name": TPLGY_DEPLOY_NAME}
+
+                result_data = self.deploy_testToplogy(function_tplgy, blueprint_info)
+                if result_data["status"] == "FAIL":
+                    return result_data
+
+                time.sleep(120)
+
+                # FUNCTION TEST EXECUTION
+                function_test_list = test_config["function_test_list"]
+                for function_test in function_test_list:
+                    self.logger.info(function_test["test_protocol_kind"] + " test")
+                    result = self.function_test_vRouter(cfy, function_test)
+                    if not result:
+                        break
+
+                self.logger.debug("request vnf's delete.")
+                self.util.request_vm_delete(self.vnf_info_list)
+
+                # FUNCTION TEST TOPOLOGY UNDEPLOYMENT
+                function_tplgy.undeploy_vnf(TPLGY_DEPLOY_NAME)
+
+            elif test_config["topology_type"] == "performance_test":
+                performance_test_config = test_config
+
+                # PERFORMANCE_ TEST TOPOLOGY INITIALISATION
+                performance_tplgy = topology(orchestrator=cfy,
+                                             logger=self.logger)
+
+                result_data = self.init_performance_testToplogy(performance_tplgy,
+                                                                performance_test_config)
+                if result_data["status"] == "FAIL":
+                    return result_data
+
+                # PERFORMANCE TEST TOPOLOGY DEPLOYMENT
+                blueprint_info = {"url": PERFORMANCE_TPLGY_BLUEPRINT,
+                                  "blueprint_name": PERFORMANCE_TPLGY_BP_NAME,
+                                  "deployment_name": PERFORMANCE_TPLGY_DEPLOY_NAME}
+
+                result_data = self.deploy_testToplogy(performance_tplgy, blueprint_info)
+                if result_data["status"] == "FAIL":
+                    return result_data
+
+                # PERFORMANCE TEST EXECUTION
+                result = self.performance_test_vRouter(cfy, performance_test_config)
+
+                # PERFORMANCE TEST TOPOLOGY UNDEPLOYMENT
+                performance_tplgy.undeploy_vnf(PERFORMANCE_TPLGY_DEPLOY_NAME)
+
+            else:
+                return self.step_failure(
+                    "testing_vRouter",
+                    "Error : Unknown topology type.")
+
+        if result:
+            return self.set_resultdata(self.testcase_start_time, self.end_time_ts,
                                        "PASS", self.results)
 
         return self.step_failure(
@@ -371,9 +531,13 @@ class vRouter:
                                       glance_endpoint,
                                       token=keystone.auth_token)
 
-        for img in IMAGES.keys():
-            image_name = IMAGES[img]['image_name']
-            image_url = IMAGES[img]['image_url']
+        images = {}
+        images.update(IMAGES)
+        images.update(VNF_TEST_IMAGES)
+        for img in images.keys():
+            image_name = images[img]['image_name']
+            self.logger.info("image name = " + image_name)
+            image_url = images[img]['image_url']
 
             image_id = os_utils.get_image_id(self.glance,
                                              image_name)
@@ -524,7 +688,7 @@ class vRouter:
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
 
-    def init_testToplogy(self, tplgy):
+    def init_function_testToplogy(self, tplgy):
         self.logger.info("Collect flavor id for all topology vm")
         nova = nvclient.Client("2",
                                **self.nv_cresds)
@@ -598,7 +762,85 @@ class vRouter:
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
 
-    def deploy_testToplogy(self, tplgy):
+    def init_performance_testToplogy(self, tplgy, performance_test_config):
+
+        target_vnf = performance_test_config["vm"]["target_vnf"]
+        tester_vm = performance_test_config["vm"]["tester_vm"]
+
+        target_vnf_flavor_name = target_vnf["flavor_name"]
+        target_vnf_image_name = target_vnf["image_name"]
+        tester_vm_flavor_name = tester_vm["flavor_name"]
+        tester_vm_image_name = tester_vm["image_name"]
+
+        self.logger.info("Collect flavor id for all topology vm")
+        nova = nvclient.Client("2",
+                               **self.nv_cresds)
+
+        target_vnf_flavor_id = os_utils.get_flavor_id(
+            nova,
+            target_vnf_flavor_name)
+
+        if target_vnf_flavor_id == '':
+            return self.step_failure(
+                "making_testTopology",
+                "Error : Failed to find flavor for target vnf")
+
+        tplgy.set_target_vnf_flavor_id(target_vnf_flavor_id)
+
+        tester_vm_flavor_id = os_utils.get_flavor_id(
+            nova,
+            tester_vm_flavor_name)
+
+        if tester_vm_flavor_id == '':
+            return self.step_failure(
+                "making_testTopology",
+                "Error : Failed to find flavor for tester vm")
+
+        tplgy.set_send_tester_vm_flavor_id(tester_vm_flavor_id)
+        tplgy.set_receive_tester_vm_flavor_id(tester_vm_flavor_id)
+
+        target_vnf_image_id = os_utils.get_image_id(
+            self.glance,
+            target_vnf_image_name)
+
+        if target_vnf_image_id == '':
+            return self.step_failure(
+               "making_testTopology",
+               "Error : Failed to find required OS image for target vnf")
+
+        tplgy.set_target_vnf_image_id(target_vnf_image_id)
+
+        tester_vm_image_id = os_utils.get_image_id(
+            self.glance,
+            tester_vm_image_name)
+
+        if tester_vm_image_id == '':
+            return self.step_failure(
+               "making_testTopology",
+               "Error : Failed to find required OS image for tester vm")
+
+        tplgy.set_send_tester_vm_image_id(tester_vm_image_id)
+        tplgy.set_receive_tester_vm_image_id(tester_vm_image_id)
+
+        tplgy.set_region("RegionOne")
+
+        ext_net = os_utils.get_external_net(self.neutron)
+        if not ext_net:
+            return self.step_failure(
+                   "making_testTopology",
+                   "Failed to get external network")
+
+        tplgy.set_external_network_name(ext_net)
+
+        tplgy.set_credentials(username=self.ks_cresds['username'],
+                              password=self.ks_cresds['password'],
+                              tenant_name=self.ks_cresds['tenant_name'],
+                              auth_url=self.ks_cresds['auth_url'])
+
+        return self.set_resultdata(self.testcase_start_time, "",
+                                   "", self.results)
+
+    def deploy_testToplogy(self, tplgy, blueprint_info):
 
         start_time_ts = time.time()
         end_time_ts = start_time_ts
@@ -607,9 +849,9 @@ class vRouter:
                 '%Y-%m-%d %H:%M:%S')))
 
         # deploy
-        ret = tplgy.deploy_vnf(TPLGY_BLUEPRINT,
-                               TPLGY_BP_NAME,
-                               TPLGY_DEPLOY_NAME)
+        ret = tplgy.deploy_vnf(blueprint_info["url"],
+                               blueprint_info["blueprint_name"],
+                               blueprint_info["deployment_name"])
         if ret:
             self.logger.error("Error :deployment testtopology :%s", ret)
             return self.step_failure("making_testTopology",
@@ -633,6 +875,8 @@ class vRouter:
         cfy.undeploy_manager()
 
         # ############## TNENANT CLEANUP ################
+
+        self.ks_cresds = os_utils.get_credentials("keystone")
 
         self.logger.info("Removing %s tenant .." %
                          CFY_INPUTS['keystone_tenant_name'])
@@ -690,28 +934,13 @@ class vRouter:
         if result_data["status"] == "FAIL":
             return result_data
 
-        # ############### VNF TOPOLOGY INITIALISATION  ################
-
-        tplgy = topology(TPLGY_INPUTS,
-                         cfy,
-                         self.logger)
-
-        result_data = self.init_testToplogy(tplgy)
-        if result_data["status"] == "FAIL":
-            return result_data
-
-        # ############### VNF TOPOLOGY DEPLOYMENT ################
-
-        result_data = self.deploy_testToplogy(tplgy)
-        if result_data["status"] == "FAIL":
-            return result_data
-
         # ############### VNF TEST ################
+
+        result_data = self.init_vRouter_test(cfy)
 
         result_data = self.test_vRouter(cfy)
 
         # ############### CLEAN ENVIROMENT ################
-
         self.clean_enviroment(cfy)
 
         return result_data

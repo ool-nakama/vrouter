@@ -22,6 +22,26 @@ f.close()
 
 IMAGE = functest_yaml.get("vRouter").get("general").get("images").get("vyos")
 
+VNF_DATA_DIR = functest_yaml.get("general").get(
+    "directories").get("dir_vRouter_data") + "/"
+
+CONFIG_VNF_TEST_YAML = VNF_DATA_DIR + "opnfv-vnf-data/config_vnf_test.yaml"
+with open(CONFIG_VNF_TEST_YAML) as f:
+    vnftest_yaml = yaml.safe_load(f)
+f.close()
+
+TESTER_IMAGE = vnftest_yaml.get("general").get("images").get("tester_vm_os")
+
+RESULT_SPRIT_INDEX = {
+    "transfer": 8,     #Transfer
+    "bandwidth": 6,    #Bandwidth
+    "jitter": 4,       #Jitter
+    "los_total": 2,    #Lost/Total Datagrams
+    "pkt_loss": 1      #Packet loss
+}
+
+BIT_PER_BYTE = 8
+
 
 class utilvnf:
 
@@ -60,9 +80,24 @@ class utilvnf:
             if s.name == server_name:
                 break
 
+        #self.logger.debug(s.addresses[network_name])
+
         address = s.addresses[network_name][0]["addr"]
 
         return address
+
+    def get_mac_address(self, server_name, network_name):
+        creds = self.get_nova_credentials()
+        nova_client = novaclient.Client(**creds)
+        servers_list = nova_client.servers.list()
+
+        for s in servers_list:
+            if s.name == server_name:
+                break
+
+        mac_address = s.addresses[network_name][0]["OS-EXT-IPS-MAC:mac_addr"]
+
+        return mac_address
 
     def reboot_vm(self, server_name):
         creds = self.get_nova_credentials()
@@ -74,6 +109,18 @@ class utilvnf:
                 break
 
         s.reboot()
+
+        return
+
+    def delete_vm(self, server_name):
+        creds = self.get_nova_credentials()
+        nova_client = novaclient.Client(**creds)
+        servers_list = nova_client.servers.list()
+
+        for s in servers_list:
+            if s.name == server_name:
+                nova_client.servers.delete(s)
+                break
 
         return
 
@@ -153,12 +200,64 @@ class utilvnf:
                               vnf["floating_ip"])
 
             for network in network_list:
+                network_name = network["network_name"]
                 ip = self.get_address(vnf["vnf_name"],
                                       network["network_name"])
-                network_name = network["network_name"]
                 vnf[network_name + "_ip"] = ip
+                mac = self.get_mac_address(vnf["vnf_name"],
+                                           network["network_name"])
+                vnf[network_name + "_mac"] = mac
+
                 self.logger.debug(network_name + "_ip of " + vnf["vnf_name"] +
                                   " : " + vnf[network_name + "_ip"])
+                self.logger.debug(network_name + "_mac of " + vnf["vnf_name"] +
+                                  " : " + vnf[network_name + "_mac"])
+
+        return vnf_info_list
+
+    def get_vnf_info_list_for_performance_test(self, cfy_manager_ip, topology_deploy_name,
+                                               performance_test_config):
+        network_list = self.get_blueprint_outputs_networks(
+                                                        cfy_manager_ip,
+                                                        topology_deploy_name)
+        vnf_info_list = self.get_blueprint_outputs_vnfs(cfy_manager_ip,
+                                                        topology_deploy_name)
+        for vnf in vnf_info_list:
+            vnf_name = vnf["vnf_name"]
+            if vnf_name == "target_vnf":
+                vnf["target_vnf_flag"] = True
+                vnf["os_type"] = performance_test_config["vm"]["target_vnf"]["os_type"] 
+                vnf["user"] = IMAGE["user"]
+                vnf["pass"] = IMAGE["pass"]
+            else:
+                vnf["target_vnf_flag"] = False
+                vnf["os_type"] = performance_test_config["vm"]["tester_vm"]["os_type"]
+                vnf["user"] = TESTER_IMAGE["user"]
+                vnf["key_path"] = TESTER_IMAGE["key_path"]
+
+            self.logger.debug("vnf name : " + vnf_name)
+            self.logger.debug(vnf_name + " floating ip address : " +
+                              vnf["floating_ip"])
+
+            for network in network_list:
+                if vnf_name == "send_side_testar_vm":
+                    if network["network_name"] == "receive_side_traffic_plane_network":
+                        continue
+                elif vnf_name == "receive_side_testar_vm":
+                    if network["network_name"] == "send_side_traffic_plane_network":
+                        continue
+
+                ip = self.get_address(vnf["vnf_name"],
+                                      network["network_name"])
+                mac = self.get_mac_address(vnf["vnf_name"],
+                                           network["network_name"])
+                network_name = network["network_name"]
+                vnf[network_name + "_ip"] = ip
+                vnf[network_name + "_mac"] = mac
+                self.logger.debug(network_name + "_ip of " + vnf["vnf_name"] +
+                                  " : " + vnf[network_name + "_ip"])
+                self.logger.debug(network_name + "_mac of " + vnf["vnf_name"] +
+                                  " : " + vnf[network_name + "_mac"])
 
         return vnf_info_list
 
@@ -177,7 +276,126 @@ class utilvnf:
 
         return reference_vnf_list
 
+    def get_send_tester_vm(self, vnf_info_list):
+        return self.get_vnf_info(vnf_info_list, "send_side_testar_vm")
+
+    def get_receive_tester_vm(self, vnf_info_list):
+        return self.get_vnf_info(vnf_info_list, "receive_side_testar_vm")
+
     def request_vnf_reboot(self, vnf_info_list):
         for vnf in vnf_info_list:
             self.logger.debug("reboot the " + vnf["vnf_name"])
             self.reboot_vm(vnf["vnf_name"])
+
+    def request_vm_delete(self, vnf_info_list):
+        for vnf in vnf_info_list:
+            self.logger.debug("delete the " + vnf["vnf_name"])
+            self.delete_vm(vnf["vnf_name"])
+
+    def get_vnf_info(self, vnf_info_list, vnf_name):
+        for vnf in vnf_info_list:
+            if vnf["vnf_name"] == vnf_name:
+                return vnf
+
+        return None
+
+    def result_parser(self, data):
+        length = len(re.split(" +", data))
+        res_data = {}
+        for key in RESULT_SPRIT_INDEX.keys():
+             index = length - int(RESULT_SPRIT_INDEX[key])
+             res_data.update({ key : re.split(" +", data)[index] })
+
+             if key == "los_total":
+                 lost = re.split(" +", data)[index].split("/")[0]  # Lost Datagrams
+                 res_data.update({ "pkt_lost" : lost })
+                 total = re.split(" +", data)[index].split("/")[1]  # Total Datagrams
+                 res_data.update({"pkt_total": total})
+             elif key == "pkt_loss":
+                 pkt_loss = re.split(" +", data)[index]
+                 pkt_loss = pkt_loss.lstrip("(")
+                 pkt_loss = pkt_loss.rstrip("%)\r\n")
+                 res_data.update({key: float(pkt_loss)})
+
+        return res_data
+
+    def calc_avg(self, result_data_list):
+        count = 0
+        res_data = {}
+        transfer = 0
+        bandwidth = 0
+        jitter = 0
+        pkt_lost = 0
+        pkt_total = 0
+        pkt_loss = 0
+
+        for data in result_data_list:
+            transfer = transfer + float(data["transfer"])
+            bandwidth = bandwidth + float(data["bandwidth"])
+            jitter = jitter + float(data["jitter"])
+            pkt_lost = pkt_lost + float(data["pkt_lost"])
+            pkt_total = pkt_total + float(data["pkt_total"])
+            pkt_loss = pkt_loss + float(data["pkt_loss"])
+            count = count + 1
+
+        if count == 0:
+            return None
+
+        avg_transfer = float(transfer) / float(count)
+        res_data.update({"avg_transfer": avg_transfer})
+
+        avg_bandwidth = float(bandwidth) / float(count)
+        res_data.update({"avg_bandwidth": avg_bandwidth})
+
+        avg_jitter = float(jitter) / float(count)
+        res_data.update({"avg_jitter": avg_jitter})
+
+        res_data.update({"pkt_lost": pkt_lost})
+
+        res_data.update({"pkt_total": pkt_total})
+
+        avg_pkt_loss = float(pkt_loss) / float(count)
+        res_data.update({"avg_pkt_loss": avg_pkt_loss})
+
+        detect_cnt = count
+        res_data.update({"detect_cnt": detect_cnt})
+
+        return res_data
+
+    def output_result_data(self, logger, input_param ,avg_data):
+        client_ip = input_param["client_ip"]
+        server_ip = input_param["server_ip"]
+        packet_size = str(input_param["packet_size"])
+        bandwidth = str(input_param["bandwidth"])
+        port = str(input_param["udp_port"])
+        time = str(input_param["time"])
+        count = str(input_param["count"])
+
+        detect_cnt = str(avg_data["detect_cnt"])
+        avg_transfer = str(int(round(avg_data["avg_transfer"],0)))
+        avg_bandwidth = str(int(round(avg_data["avg_bandwidth"],0)))
+        avg_jitter = str(round(avg_data["avg_jitter"], 3))
+        pkt_lost = str(int(avg_data["pkt_lost"]))
+        pkt_total = str(int(avg_data["pkt_total"]))
+        avg_pkt_loss = str(round(avg_data["avg_pkt_loss"], 1))
+
+        logger.info("=======================================================================")
+        logger.info(" Performance test result")
+        logger.info("  Input Parameter:")
+        logger.info("    client_ip=" + client_ip + ", server_ip=" + server_ip)
+        logger.info("    udp, packet_size=" + packet_size + "byte, bandwidth=" + bandwidth +
+                    "M, port=" + port + ", time=" + time + ", count=" + count)
+        logger.info("")
+        logger.info("  Average:")
+        logger.info("    Transfer     Bandwidth        Jitter      Loss rate")
+        logger.info("    " + avg_transfer + " MBytes" + "   " + avg_bandwidth + "Mbits/sec     " +
+                    avg_jitter + " ms    " + avg_pkt_loss + "%")
+        logger.info("")
+        logger.info("  Total:")
+        logger.info("    number of tests=" + detect_cnt)
+        logger.info("")
+        logger.info("    Lost/Total Datagrams")
+        logger.info("    " + pkt_lost + "/" + pkt_total)
+        logger.info("=======================================================================")
+
+        return

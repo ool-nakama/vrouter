@@ -28,11 +28,23 @@ class topology:
     def set_reference_vnf_image_id(self, image_id):
         self.config['reference_vnf_image_id'] = image_id
 
+    def set_send_tester_vm_image_id(self, image_id):
+        self.config['send_side_testar_vm_image_id'] = image_id
+
+    def set_receive_tester_vm_image_id(self, image_id):
+        self.config['receive_side_testar_vm_image_id'] = image_id
+
     def set_target_vnf_flavor_id(self, flavor_id):
         self.config['target_vnf_flavor_id'] = flavor_id
 
     def set_reference_vnf_flavor_id(self, flavor_id):
         self.config['reference_vnf_flavor_id'] = flavor_id
+
+    def set_send_tester_vm_flavor_id(self, flavor_id):
+        self.config['send_side_testar_vm_flavor_id'] = flavor_id
+
+    def set_receive_tester_vm_flavor_id(self, flavor_id):
+        self.config['receive_side_testar_vm_flavor_id'] = flavor_id
 
     def set_region(self, region_name):
         self.config['region'] = region_name
@@ -70,15 +82,19 @@ class topology:
             if self.logger:
                 self.logger.error("Cloudify manager is down or not provide...")
 
-    def undeploy_vnf(self):
+    def undeploy_vnf(self, dep_name):
+        self.deploy = True
         if self.orchestrator:
             if self.deploy:
                 self.deploy = False
-                self.orchestrator.undeploy_deployment(self.dep_name)
+                self.orchestrator.undeploy_deployment(dep_name)
+                #self.orchestrator.undeploy_deployment(self.dep_name)
             else:
                 if self.logger:
                     self.logger.error(" %s isn't already deploy..."
-                                      % (self.dep_name))
+                                      % (dep_name))
+                                      # % (self.dep_name))
         else:
             if self.logger:
                 self.logger.error("Cloudify manager is down or not provide...")
+

@@ -33,10 +33,11 @@ RECEIVE_ROOP_WAIT = 1
 
 class SSH_Client():
 
-    def __init__(self, ip, user, password):
+    def __init__(self, ip, user, password=None, key_filename=None):
         self.ip = ip
         self.user = user
         self.password = password
+        self.key_filename = key_filename
         self.connected = False
 
         self.ssh = paramiko.SSHClient()
@@ -49,6 +50,7 @@ class SSH_Client():
                 self.ssh.connect(self.ip,
                                  username=self.user,
                                  password=self.password,
+                                 key_filename=self.key_filename,
                                  timeout=time_out,
                                  look_for_keys=False,
                                  allow_agent=False)
