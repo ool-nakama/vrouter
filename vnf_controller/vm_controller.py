@@ -15,7 +15,6 @@ import yaml
 
 import functest.utils.functest_logger as ft_logger
 from vrouter.utilvnf import utilvnf
-from vrouter.vnf_controller.checker import Checker
 from vrouter.vnf_controller.command_generator import Command_generator
 from vrouter.vnf_controller.ssh_client import SSH_Client
 
@@ -61,7 +60,8 @@ class vm_controller():
         return self.command_gen.command_create(template,
                                                cmd_input_param)
 
-    def config_vm(self, vm_info, test_cmd_file_path, cmd_input_param, prompt_file_path):
+    def config_vm(self, vm_info, test_cmd_file_path,
+                  cmd_input_param, prompt_file_path):
         ssh = self.connect_ssh_and_config_vm(vm_info,
                                              test_cmd_file_path,
                                              cmd_input_param,
@@ -73,10 +73,11 @@ class vm_controller():
 
         return True
 
-    def connect_ssh_and_config_vm(self, vm_info, test_cmd_file_path, cmd_input_param, prompt_file_path):
+    def connect_ssh_and_config_vm(self, vm_info, test_cmd_file_path,
+                                  cmd_input_param, prompt_file_path):
 
         key_filename = None
-        if vm_info.has_key("key_path"):
+        if "key_path" in vm_info:
             key_filename = vm_info["key_path"]
 
         ssh = SSH_Client(ip=vm_info["floating_ip"],
@@ -106,7 +107,8 @@ class vm_controller():
 
         return ssh
 
-    def command_create_and_execute(self, ssh, test_cmd_file_path, cmd_input_param, prompt_file_path):
+    def command_create_and_execute(self, ssh, test_cmd_file_path,
+                                   cmd_input_param, prompt_file_path):
         prompt_file = open(prompt_file_path,
                            'r')
         prompt = yaml.safe_load(prompt_file)
@@ -135,11 +137,10 @@ class vm_controller():
 
             time.sleep(COMMAND_WAIT)
 
-        return True, res_data_list 
+        return True, res_data_list
 
     def command_execute(self, ssh, command, prompt):
-        res_data = ssh.send(command,
-                       prompt)
+        res_data = ssh.send(command, prompt)
         if res_data is None:
             logger.info("retry send command : " + command)
             res_data = ssh.send(command,

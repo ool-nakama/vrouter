@@ -16,13 +16,11 @@ import yaml
 import functest.utils.functest_logger as ft_logger
 from vrouter.utilvnf import utilvnf
 from vrouter.vnf_controller.checker import Checker
-from vrouter.vnf_controller.command_generator import Command_generator
-from vrouter.vnf_controller.ssh_client import SSH_Client
 from vrouter.vnf_controller.vm_controller import vm_controller
 
 
 """ logging configuration """
-logger = ft_logger.Logger("tester_ctlr").getLogger()
+logger = ft_logger.Logger("tester_ctrl").getLogger()
 
 REPO_PATH = os.environ['repos_dir'] + '/functest/'
 if not os.path.exists(REPO_PATH):
@@ -57,8 +55,9 @@ class tester_controller():
                                   self.credentials["region_name"])
 
     def config_send_tester(self, source_tester, destination_tester, target_vnf,
-                           pre_cmd_file_path, test_cmd_file_path, parameter_file_path,
-                           prompt_file_path, input_parameter):
+                           pre_cmd_file_path, test_cmd_file_path,
+                           parameter_file_path, prompt_file_path,
+                           input_parameter):
         parameter_file = open(parameter_file_path,
                               'r')
         cmd_input_param = yaml.safe_load(parameter_file)
@@ -66,9 +65,12 @@ class tester_controller():
 
         cmd_input_param.update(input_parameter)
 
-        cmd_input_param["macaddress"] = source_tester["send_side_traffic_plane_network_mac"]
-        cmd_input_param["dst_ip"] = destination_tester["receive_side_traffic_plane_network_ip"]
-        cmd_input_param["gw_ip"] = target_vnf["send_side_traffic_plane_network_ip"]
+        cmd_input_param["macaddress"] = \
+            source_tester["send_side_traffic_plane_network_mac"]
+        cmd_input_param["dst_ip"] = \
+            destination_tester["receive_side_traffic_plane_network_ip"]
+        cmd_input_param["gw_ip"] = \
+            target_vnf["send_side_traffic_plane_network_ip"]
 
         source_tester["pass"] = None
 
@@ -81,7 +83,8 @@ class tester_controller():
         # execute peformance test command
         count = cmd_input_param["count"]
         for i in range(count):
-            (res, res_data_list) = self.vm_controller.command_create_and_execute(
+            (res, res_data_list) = \
+                self.vm_controller.command_create_and_execute(
                                             ssh,
                                             test_cmd_file_path,
                                             cmd_input_param,
@@ -92,8 +95,10 @@ class tester_controller():
         ssh.close()
         return res
 
-    def config_receive_tester(self, source_tester, destination_tester, target_vnf,
-                   test_cmd_file_path, parameter_file_path, prompt_file_path, input_parameter):
+    def config_receive_tester(self, source_tester,
+                              destination_tester, target_vnf,
+                              test_cmd_file_path, parameter_file_path,
+                              prompt_file_path, input_parameter):
         parameter_file = open(parameter_file_path,
                               'r')
         cmd_input_param = yaml.safe_load(parameter_file)
@@ -101,8 +106,10 @@ class tester_controller():
 
         cmd_input_param.update(input_parameter)
 
-        cmd_input_param["macaddress"] = source_tester["receive_side_traffic_plane_network_mac"]
-        cmd_input_param["gw_ip"] = target_vnf["receive_side_traffic_plane_network_ip"]
+        cmd_input_param["macaddress"] = \
+            source_tester["receive_side_traffic_plane_network_mac"]
+        cmd_input_param["gw_ip"] = \
+            target_vnf["receive_side_traffic_plane_network_ip"]
 
         source_tester["pass"] = None
 
@@ -131,8 +138,8 @@ class tester_controller():
         res = True
         res_data_list = []
         for check_rule_file_path in check_rule_file_path_list:
-            (check_rule_dir, check_rule_file) = os.path.split(
-                                                    check_rule_file_path)
+            (check_rule_dir, check_rule_file) = \
+                os.path.split(check_rule_file_path)
             check_rules = checker.load_check_rule(check_rule_dir,
                                                   check_rule_file,
                                                   cmd_input_param)
@@ -146,8 +153,10 @@ class tester_controller():
                 break
             time.sleep(COMMAND_WAIT)
 
-        input_parameter["client_ip"] = destination_tester["send_side_traffic_plane_network_ip"]
-        input_parameter["server_ip"] = source_tester["receive_side_traffic_plane_network_ip"]
+        input_parameter["client_ip"] = \
+            destination_tester["send_side_traffic_plane_network_ip"]
+        input_parameter["server_ip"] = \
+            source_tester["receive_side_traffic_plane_network_ip"]
 
         return self.output_result_data(res_data_list, input_parameter)
 
@@ -169,4 +178,3 @@ class tester_controller():
         self.util.output_result_data(logger, input_parameter, avg_data)
 
         return True
-

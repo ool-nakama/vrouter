@@ -126,6 +126,7 @@ PERFORMANCE_TPLGY_DEPLOY_NAME = vnftest_yaml.get("test_topology").get(
     "performance_test_topology").get("blueprint").get(
     "deployment_name")
 
+
 class vRouter:
     def __init__(self, logger):
 
@@ -311,9 +312,9 @@ class vRouter:
         input_parameter = performance_test_config["input_parameter"]
 
         vnf_info_list = self.util.get_vnf_info_list_for_performance_test(
-                                                                self.cfy_manager_ip,
-                                                                PERFORMANCE_TPLGY_DEPLOY_NAME,
-                                                                performance_test_config)
+                                      self.cfy_manager_ip,
+                                      PERFORMANCE_TPLGY_DEPLOY_NAME,
+                                      performance_test_config)
 
         target_vnf = self.util.get_target_vnf(vnf_info_list)
         if target_vnf is None:
@@ -389,7 +390,8 @@ class vRouter:
                                   "blueprint_name": TPLGY_BP_NAME,
                                   "deployment_name": TPLGY_DEPLOY_NAME}
 
-                result_data = self.deploy_testToplogy(function_tplgy, blueprint_info)
+                result_data = self.deploy_testToplogy(function_tplgy,
+                                                      blueprint_info)
                 if result_data["status"] == "FAIL":
                     return result_data
 
@@ -398,7 +400,8 @@ class vRouter:
                 # FUNCTION TEST EXECUTION
                 function_test_list = test_config["function_test_list"]
                 for function_test in function_test_list:
-                    self.logger.info(function_test["test_protocol_kind"] + " test")
+                    self.logger.info(function_test["test_protocol_kind"] +
+                                     " test")
                     result = self.function_test_vRouter(cfy, function_test)
                     if not result:
                         break
@@ -416,22 +419,27 @@ class vRouter:
                 performance_tplgy = topology(orchestrator=cfy,
                                              logger=self.logger)
 
-                result_data = self.init_performance_testToplogy(performance_tplgy,
-                                                                performance_test_config)
+                result_data = self.init_performance_testToplogy(
+                                       performance_tplgy,
+                                       performance_test_config)
                 if result_data["status"] == "FAIL":
                     return result_data
 
                 # PERFORMANCE TEST TOPOLOGY DEPLOYMENT
-                blueprint_info = {"url": PERFORMANCE_TPLGY_BLUEPRINT,
-                                  "blueprint_name": PERFORMANCE_TPLGY_BP_NAME,
-                                  "deployment_name": PERFORMANCE_TPLGY_DEPLOY_NAME}
+                blueprint_info = \
+                    {"url": PERFORMANCE_TPLGY_BLUEPRINT,
+                     "blueprint_name": PERFORMANCE_TPLGY_BP_NAME,
+                     "deployment_name": PERFORMANCE_TPLGY_DEPLOY_NAME}
 
-                result_data = self.deploy_testToplogy(performance_tplgy, blueprint_info)
+                result_data = self.deploy_testToplogy(performance_tplgy,
+                                                      blueprint_info)
                 if result_data["status"] == "FAIL":
                     return result_data
 
                 # PERFORMANCE TEST EXECUTION
-                result = self.performance_test_vRouter(cfy, performance_test_config)
+                result = self.performance_test_vRouter(
+                                  cfy,
+                                  performance_test_config)
 
                 # PERFORMANCE TEST TOPOLOGY UNDEPLOYMENT
                 performance_tplgy.undeploy_vnf(PERFORMANCE_TPLGY_DEPLOY_NAME)
@@ -442,7 +450,8 @@ class vRouter:
                     "Error : Unknown topology type.")
 
         if result:
-            return self.set_resultdata(self.testcase_start_time, self.end_time_ts,
+            return self.set_resultdata(self.testcase_start_time,
+                                       self.end_time_ts,
                                        "PASS", self.results)
 
         return self.step_failure(

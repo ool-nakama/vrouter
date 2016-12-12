@@ -125,8 +125,4 @@ class Test_exec():
 
             logger.debug("Finish check method.")
 
-            # Clear the test configuration.
-            #self.util.reboot_vm(target_vnf["vnf_name"])
-            #self.util.reboot_vm(reference_vnf["vnf_name"])
-
         return True

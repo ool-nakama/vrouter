@@ -10,7 +10,6 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 ########################################################################
 import os
-import time
 import yaml
 
 import functest.utils.functest_logger as ft_logger
@@ -51,10 +50,12 @@ class Performance_test_exec():
                                   self.credentials["tenant_name"],
                                   self.credentials["region_name"])
 
-    def config_send_tester_vm(self, target_vnf, send_tester_vm, receive_tester_vm, input_parameter):
+    def config_send_tester_vm(self, target_vnf, send_tester_vm,
+                              receive_tester_vm, input_parameter):
         logger.debug("Configuration to send tester vm")
         test_info = self.test_cmd_map_yaml[send_tester_vm["os_type"]]
-        pre_test_cmd_file_path = test_info["performance"]["performance_pre_command"]
+        pre_test_cmd_file_path = \
+            test_info["performance"]["performance_pre_command"]
         test_cmd_file_path = test_info["performance"]["performance_send"]
         send_tester_parameter_file_path = test_info["performance"][
                                             "parameter_send_tester"]
@@ -70,7 +71,8 @@ class Performance_test_exec():
                                          prompt_file_path,
                                          input_parameter)
 
-    def config_receive_tester_vm(self, target_vnf, send_tester_vm, receive_tester_vm, input_parameter):
+    def config_receive_tester_vm(self, target_vnf, send_tester_vm,
+                                 receive_tester_vm, input_parameter):
         logger.debug("Configuration to send tester vm")
         test_info = self.test_cmd_map_yaml[receive_tester_vm["os_type"]]
         test_cmd_file_path = test_info["performance"]["performance_receive"]
@@ -87,10 +89,11 @@ class Performance_test_exec():
                                          prompt_file_path,
                                          input_parameter)
 
-
-    def result_check(self, ssh, send_tester_vm, receive_tester_vm, test_kind, test_list, input_parameter):
+    def result_check(self, ssh, send_tester_vm, receive_tester_vm,
+                     test_kind, test_list, input_parameter):
         test_info = self.test_cmd_map_yaml[send_tester_vm["os_type"]]
-        send_tester_parameter_file_path = test_info[test_kind]["parameter_receive_tester"]
+        send_tester_parameter_file_path = \
+            test_info[test_kind]["parameter_receive_tester"]
         prompt_file_path = test_info["prompt"]
         check_rule_file_path_list = []
 
@@ -98,21 +101,25 @@ class Performance_test_exec():
             check_rule_file_path_list.append(test_info[test_kind][test])
 
         return self.tester_ctrl.result_check(ssh,
-                                          send_tester_vm,
-                                          receive_tester_vm,
-                                          check_rule_file_path_list,
-                                          send_tester_parameter_file_path,
-                                          prompt_file_path,
-                                          input_parameter)
+                                             send_tester_vm,
+                                             receive_tester_vm,
+                                             check_rule_file_path_list,
+                                             send_tester_parameter_file_path,
+                                             prompt_file_path,
+                                             input_parameter)
 
-    def run(self, target_vnf, send_tester_vm, receive_tester_vm, input_parameter):
+    def run(self, target_vnf, send_tester_vm,
+            receive_tester_vm, input_parameter):
         logger.debug("Start config command for performance test")
 
-        receive_tester_ssh = self.config_receive_tester_vm(target_vnf, send_tester_vm, receive_tester_vm, input_parameter)
-        if receive_tester_ssh == None:
+        receive_tester_ssh = self.config_receive_tester_vm(
+                                      target_vnf, send_tester_vm,
+                                      receive_tester_vm, input_parameter)
+        if receive_tester_ssh is None:
             return False
 
-        result = self.config_send_tester_vm(target_vnf, send_tester_vm, receive_tester_vm, input_parameter)
+        result = self.config_send_tester_vm(target_vnf, send_tester_vm,
+                                            receive_tester_vm, input_parameter)
         if not result:
             return False
 
@@ -120,7 +127,7 @@ class Performance_test_exec():
 
         logger.debug("Start check method")
 
-        test_list = ["receive_check_iperf_stop","receive_check_iperf_result"]
+        test_list = ["receive_check_iperf_stop", "receive_check_iperf_result"]
 
         result = self.result_check(receive_tester_ssh,
                                    receive_tester_vm,
@@ -133,8 +140,4 @@ class Performance_test_exec():
 
         logger.debug("Finish check method.")
 
-        # Clear the test configuration.
-#        self.util.reboot_vm(target_vnf["vnf_name"])
-
         return True
-

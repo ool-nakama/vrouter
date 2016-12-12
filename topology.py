@@ -88,13 +88,10 @@ class topology:
             if self.deploy:
                 self.deploy = False
                 self.orchestrator.undeploy_deployment(dep_name)
-                #self.orchestrator.undeploy_deployment(self.dep_name)
             else:
                 if self.logger:
                     self.logger.error(" %s isn't already deploy..."
                                       % (dep_name))
-                                      # % (self.dep_name))
         else:
             if self.logger:
                 self.logger.error("Cloudify manager is down or not provide...")
-

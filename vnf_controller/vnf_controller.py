@@ -14,9 +14,7 @@ import time
 import yaml
 
 import functest.utils.functest_logger as ft_logger
-from vrouter.utilvnf import utilvnf
 from vrouter.vnf_controller.checker import Checker
-from vrouter.vnf_controller.command_generator import Command_generator
 from vrouter.vnf_controller.ssh_client import SSH_Client
 from vrouter.vnf_controller.vm_controller import vm_controller
 
@@ -60,9 +58,9 @@ class VNF_controller():
                                                 "data_plane_network_ip"]
 
         return self.vm_controller.config_vm(source_vnf,
-                                             test_cmd_file_path,
-                                             cmd_input_param,
-                                             prompt_file_path)
+                                            test_cmd_file_path,
+                                            cmd_input_param,
+                                            prompt_file_path)
 
     def result_check(self, target_vnf, reference_vnf,
                      check_rule_file_path_list, parameter_file_path,

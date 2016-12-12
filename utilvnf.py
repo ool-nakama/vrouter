@@ -33,11 +33,11 @@ f.close()
 TESTER_IMAGE = vnftest_yaml.get("general").get("images").get("tester_vm_os")
 
 RESULT_SPRIT_INDEX = {
-    "transfer": 8,     #Transfer
-    "bandwidth": 6,    #Bandwidth
-    "jitter": 4,       #Jitter
-    "los_total": 2,    #Lost/Total Datagrams
-    "pkt_loss": 1      #Packet loss
+    "transfer": 8,
+    "bandwidth": 6,
+    "jitter": 4,
+    "los_total": 2,
+    "pkt_loss": 1
 }
 
 BIT_PER_BYTE = 8
@@ -79,8 +79,6 @@ class utilvnf:
         for s in servers_list:
             if s.name == server_name:
                 break
-
-        #self.logger.debug(s.addresses[network_name])
 
         address = s.addresses[network_name][0]["addr"]
 
@@ -215,23 +213,27 @@ class utilvnf:
 
         return vnf_info_list
 
-    def get_vnf_info_list_for_performance_test(self, cfy_manager_ip, topology_deploy_name,
+    def get_vnf_info_list_for_performance_test(self, cfy_manager_ip,
+                                               topology_deploy_name,
                                                performance_test_config):
         network_list = self.get_blueprint_outputs_networks(
-                                                        cfy_manager_ip,
-                                                        topology_deploy_name)
-        vnf_info_list = self.get_blueprint_outputs_vnfs(cfy_manager_ip,
-                                                        topology_deploy_name)
+                                               cfy_manager_ip,
+                                               topology_deploy_name)
+        vnf_info_list = self.get_blueprint_outputs_vnfs(
+                                               cfy_manager_ip,
+                                               topology_deploy_name)
         for vnf in vnf_info_list:
             vnf_name = vnf["vnf_name"]
             if vnf_name == "target_vnf":
                 vnf["target_vnf_flag"] = True
-                vnf["os_type"] = performance_test_config["vm"]["target_vnf"]["os_type"] 
+                vnf["os_type"] = \
+                    performance_test_config["vm"]["target_vnf"]["os_type"]
                 vnf["user"] = IMAGE["user"]
                 vnf["pass"] = IMAGE["pass"]
             else:
                 vnf["target_vnf_flag"] = False
-                vnf["os_type"] = performance_test_config["vm"]["tester_vm"]["os_type"]
+                vnf["os_type"] = \
+                    performance_test_config["vm"]["tester_vm"]["os_type"]
                 vnf["user"] = TESTER_IMAGE["user"]
                 vnf["key_path"] = TESTER_IMAGE["key_path"]
 
@@ -241,10 +243,12 @@ class utilvnf:
 
             for network in network_list:
                 if vnf_name == "send_side_testar_vm":
-                    if network["network_name"] == "receive_side_traffic_plane_network":
+                    if network["network_name"] == \
+                       "receive_side_traffic_plane_network":
                         continue
                 elif vnf_name == "receive_side_testar_vm":
-                    if network["network_name"] == "send_side_traffic_plane_network":
+                    if network["network_name"] == \
+                       "send_side_traffic_plane_network":
                         continue
 
                 ip = self.get_address(vnf["vnf_name"],
@@ -303,19 +307,19 @@ class utilvnf:
         length = len(re.split(" +", data))
         res_data = {}
         for key in RESULT_SPRIT_INDEX.keys():
-             index = length - int(RESULT_SPRIT_INDEX[key])
-             res_data.update({ key : re.split(" +", data)[index] })
+            index = length - int(RESULT_SPRIT_INDEX[key])
+            res_data.update({key: re.split(" +", data)[index]})
 
-             if key == "los_total":
-                 lost = re.split(" +", data)[index].split("/")[0]  # Lost Datagrams
-                 res_data.update({ "pkt_lost" : lost })
-                 total = re.split(" +", data)[index].split("/")[1]  # Total Datagrams
-                 res_data.update({"pkt_total": total})
-             elif key == "pkt_loss":
-                 pkt_loss = re.split(" +", data)[index]
-                 pkt_loss = pkt_loss.lstrip("(")
-                 pkt_loss = pkt_loss.rstrip("%)\r\n")
-                 res_data.update({key: float(pkt_loss)})
+            if key == "los_total":
+                lost = re.split(" +", data)[index].split("/")[0]
+                res_data.update({"pkt_lost": lost})
+                total = re.split(" +", data)[index].split("/")[1]
+                res_data.update({"pkt_total": total})
+            elif key == "pkt_loss":
+                pkt_loss = re.split(" +", data)[index]
+                pkt_loss = pkt_loss.lstrip("(")
+                pkt_loss = pkt_loss.rstrip("%)\r\n")
+                res_data.update({key: float(pkt_loss)})
 
         return res_data
 
@@ -362,7 +366,7 @@ class utilvnf:
 
         return res_data
 
-    def output_result_data(self, logger, input_param ,avg_data):
+    def output_result_data(self, logger, input_param, avg_data):
         client_ip = input_param["client_ip"]
         server_ip = input_param["server_ip"]
         packet_size = str(input_param["packet_size"])
@@ -372,30 +376,37 @@ class utilvnf:
         count = str(input_param["count"])
 
         detect_cnt = str(avg_data["detect_cnt"])
-        avg_transfer = str(int(round(avg_data["avg_transfer"],0)))
-        avg_bandwidth = str(int(round(avg_data["avg_bandwidth"],0)))
+        avg_transfer = str(int(round(avg_data["avg_transfer"], 0)))
+        avg_bandwidth = str(int(round(avg_data["avg_bandwidth"], 0)))
         avg_jitter = str(round(avg_data["avg_jitter"], 3))
         pkt_lost = str(int(avg_data["pkt_lost"]))
         pkt_total = str(int(avg_data["pkt_total"]))
         avg_pkt_loss = str(round(avg_data["avg_pkt_loss"], 1))
 
-        logger.info("=======================================================================")
+        logger.info("====================================" +
+                    "====================================")
         logger.info(" Performance test result")
         logger.info("  Input Parameter:")
         logger.info("    client_ip=" + client_ip + ", server_ip=" + server_ip)
-        logger.info("    udp, packet_size=" + packet_size + "byte, bandwidth=" + bandwidth +
-                    "M, port=" + port + ", time=" + time + ", count=" + count)
+        logger.info("    udp, packet_size=" + packet_size +
+                    "byte, bandwidth=" + bandwidth +
+                    "M, port=" + port +
+                    ", time=" + time +
+                    ", count=" + count)
         logger.info("")
         logger.info("  Average:")
         logger.info("    Transfer     Bandwidth        Jitter      Loss rate")
-        logger.info("    " + avg_transfer + " MBytes" + "   " + avg_bandwidth + "Mbits/sec     " +
-                    avg_jitter + " ms    " + avg_pkt_loss + "%")
+        logger.info("    " + avg_transfer + " MBytes" + "   " +
+                    avg_bandwidth + "Mbits/sec     " +
+                    avg_jitter + " ms    " +
+                    avg_pkt_loss + "%")
         logger.info("")
         logger.info("  Total:")
         logger.info("    number of tests=" + detect_cnt)
         logger.info("")
         logger.info("    Lost/Total Datagrams")
         logger.info("    " + pkt_lost + "/" + pkt_total)
-        logger.info("=======================================================================")
+        logger.info("====================================" +
+                    "====================================")
 
         return
