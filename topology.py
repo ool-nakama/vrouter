@@ -23,27 +23,35 @@ class topology:
         self.orchestrator = orchestrator
 
     def set_target_vnf_image_id(self, image_id):
+        self.logger.debug("target_vnf image id : " + image_id)
         self.config['target_vnf_image_id'] = image_id
 
     def set_reference_vnf_image_id(self, image_id):
+        self.logger.debug("reference_vnf image id : " + image_id)
         self.config['reference_vnf_image_id'] = image_id
 
     def set_send_tester_vm_image_id(self, image_id):
+        self.logger.debug("send_tester_vm image id : " + image_id)
         self.config['send_side_testar_vm_image_id'] = image_id
 
     def set_receive_tester_vm_image_id(self, image_id):
+        self.logger.debug("receive_tester_vm image id : " + image_id)
         self.config['receive_side_testar_vm_image_id'] = image_id
 
     def set_target_vnf_flavor_id(self, flavor_id):
+        self.logger.debug("target_vnf flavor id : " + flavor_id)
         self.config['target_vnf_flavor_id'] = flavor_id
 
     def set_reference_vnf_flavor_id(self, flavor_id):
+        self.logger.debug("reference_vnf flavor id : " + flavor_id)
         self.config['reference_vnf_flavor_id'] = flavor_id
 
     def set_send_tester_vm_flavor_id(self, flavor_id):
+        self.logger.debug("send_tester_vm flavor id : " + flavor_id)
         self.config['send_side_testar_vm_flavor_id'] = flavor_id
 
     def set_receive_tester_vm_flavor_id(self, flavor_id):
+        self.logger.debug("receive_tester_vm flavor id : " + flavor_id)
         self.config['receive_side_testar_vm_flavor_id'] = flavor_id
 
     def set_region(self, region_name):
@@ -53,6 +61,7 @@ class topology:
         self.config['agent_user'] = agent_user
 
     def set_external_network_name(self, external_network_name):
+        self.logger.debug("external_network_name : " + external_network_name)
         self.config['external_network_name'] = external_network_name
 
     def set_public_domain(self, public_domain):

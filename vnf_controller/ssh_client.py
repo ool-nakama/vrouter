@@ -26,7 +26,15 @@ with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
     functest_yaml = yaml.safe_load(f)
 f.close()
 
-SSH_RECEIVE_BUFFER = functest_yaml.get("vRouter").get("general").get(
+VNF_DATA_DIR = functest_yaml.get("general").get(
+    "directories").get("dir_vRouter_data") + "/"
+
+TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + "opnfv-vnf-data/test_env_config.yaml"
+with open(TEST_ENV_CONFIG_YAML) as f:
+    test_env_config_yaml = yaml.safe_load(f)
+f.close()
+
+SSH_RECEIVE_BUFFER = test_env_config_yaml.get("general").get(
     "ssh_receive_buffer")
 RECEIVE_ROOP_WAIT = 1
 
@@ -66,6 +74,7 @@ class SSH_Client():
                 break
             except:
                 logger.info("SSH timeout for %s..." % self.ip)
+                time.sleep(time_out)
                 retrycount -= 1
 
         if retrycount == 0:

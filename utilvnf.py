@@ -20,17 +20,16 @@ with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
     functest_yaml = yaml.safe_load(f)
 f.close()
 
-IMAGE = functest_yaml.get("vRouter").get("general").get("images").get("vyos")
-
 VNF_DATA_DIR = functest_yaml.get("general").get(
     "directories").get("dir_vRouter_data") + "/"
 
-CONFIG_VNF_TEST_YAML = VNF_DATA_DIR + "opnfv-vnf-data/config_vnf_test.yaml"
-with open(CONFIG_VNF_TEST_YAML) as f:
-    vnftest_yaml = yaml.safe_load(f)
+TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + "opnfv-vnf-data/test_env_config.yaml"
+with open(TEST_ENV_CONFIG_YAML) as f:
+    test_env_config_yaml = yaml.safe_load(f)
 f.close()
 
-TESTER_IMAGE = vnftest_yaml.get("general").get("images").get("tester_vm_os")
+IMAGE = test_env_config_yaml.get("general").get("images").get("vyos")
+TESTER_IMAGE = test_env_config_yaml.get("general").get("images").get("tester_vm_os")
 
 RESULT_SPRIT_INDEX = {
     "transfer": 8,
@@ -225,15 +224,19 @@ class utilvnf:
         for vnf in vnf_info_list:
             vnf_name = vnf["vnf_name"]
             if vnf_name == "target_vnf":
+                target_vnf = self.get_vnf_info(
+                                      performance_test_config["vnf_list"],
+                                      "target_vnf")
                 vnf["target_vnf_flag"] = True
-                vnf["os_type"] = \
-                    performance_test_config["vm"]["target_vnf"]["os_type"]
+                vnf["os_type"] = target_vnf["os_type"]
                 vnf["user"] = IMAGE["user"]
                 vnf["pass"] = IMAGE["pass"]
             else:
+                tester_vm = self.get_vnf_info(
+                                      performance_test_config["vnf_list"],
+                                      "tester_vm")
                 vnf["target_vnf_flag"] = False
-                vnf["os_type"] = \
-                    performance_test_config["vm"]["tester_vm"]["os_type"]
+                vnf["os_type"] = tester_vm["os_type"]
                 vnf["user"] = TESTER_IMAGE["user"]
                 vnf["key_path"] = TESTER_IMAGE["key_path"]
 
@@ -372,7 +375,7 @@ class utilvnf:
         packet_size = str(input_param["packet_size"])
         bandwidth = str(input_param["bandwidth"])
         port = str(input_param["udp_port"])
-        time = str(input_param["time"])
+        duration = str(input_param["duration"])
         count = str(input_param["count"])
 
         detect_cnt = str(avg_data["detect_cnt"])
@@ -391,7 +394,7 @@ class utilvnf:
         logger.info("    udp, packet_size=" + packet_size +
                     "byte, bandwidth=" + bandwidth +
                     "M, port=" + port +
-                    ", time=" + time +
+                    ", duration=" + duration +
                     ", count=" + count)
         logger.info("")
         logger.info("  Average:")

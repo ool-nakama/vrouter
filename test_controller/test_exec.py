@@ -26,7 +26,13 @@ f.close()
 
 VNF_DATA_DIR = functest_yaml.get("general").get(
     "directories").get("dir_vRouter_data") + "/"
-PROTOCOL_STABLE_WAIT = functest_yaml.get("vRouter").get("general").get(
+
+TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + "opnfv-vnf-data/test_env_config.yaml"
+with open(TEST_ENV_CONFIG_YAML) as f:
+    test_env_config_yaml = yaml.safe_load(f)
+f.close()
+
+PROTOCOL_STABLE_WAIT = test_env_config_yaml.get("general").get(
     "protocol_stable_wait")
 
 
@@ -112,8 +118,10 @@ class Test_exec():
 
             logger.debug("Finish config command.")
 
-            logger.debug("Start check method")
+            logger.debug("Waiting for protocol stable.")
             time.sleep(PROTOCOL_STABLE_WAIT)
+
+            logger.debug("Start check method")
 
             result = self.result_check(target_vnf,
                                        reference_vnf,

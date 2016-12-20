@@ -76,55 +76,42 @@ CFY_MANAGER_REQUIERMENTS = functest_yaml.get(
 CFY_INPUTS = functest_yaml.get("vRouter").get("cloudify").get("inputs")
 
 
-TPLGY_BLUEPRINT = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("blueprint")
-TPLGY_DEPLOYMENT_NAME = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("deployment-name")
-TPLGY_INPUTS = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("inputs")
-TPLGY_REQUIERMENTS = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("requierments")
-
-TPLGY_TGT_FLAVOR_ID = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("inputs").get("target_vnf_flavor_id")
-TPLGY_TGT_IMAGE_ID = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("inputs").get("target_vnf_image_id")
-
-TPLGY_REF_FLAVOR_ID = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("inputs").get("reference_vnf_flavor_id")
-TPLGY_REF_IMAGE_ID = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("inputs").get("reference_vnf_image_id")
-
-TPLGY_IMAGE_NAME = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("requierments").get("os_image")
-
-TPLGY_DEPLOY_NAME = functest_yaml.get("vRouter").get(
-    "vnf_topology").get("blueprint").get("deployment_name")
-
-TPLGY_BP_NAME = functest_yaml.get("vRouter").get("vnf_topology").get(
-    "blueprint").get("blueprint_name")
-
-REBOOT_WAIT = functest_yaml.get("vRouter").get(
-    "general").get("reboot_wait")
-
-CONFIG_VNF_TEST_YAML = VNF_DATA_DIR + "opnfv-vnf-data/config_vnf_test.yaml"
-with open(CONFIG_VNF_TEST_YAML) as f:
-    vnftest_yaml = yaml.safe_load(f)
+TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + "opnfv-vnf-data/test_env_config.yaml"
+with open(TEST_ENV_CONFIG_YAML) as f:
+    test_env_config_yaml = yaml.safe_load(f)
 f.close()
 
-VNF_TEST_IMAGES = vnftest_yaml.get("general").get("images")
+VNF_TEST_IMAGES = test_env_config_yaml.get("general").get("images")
 IMAGES.update(VNF_TEST_IMAGES)
 
-PERFORMANCE_TPLGY_BLUEPRINT = vnftest_yaml.get("test_topology").get(
+FUNCTION_TEST_TPLGY_BLUEPRINT = test_env_config_yaml.get("test_topology").get(
+    "function_test_topology").get("blueprint")
+
+FUNCTION_TEST_TPLGY_BP_NAME = test_env_config_yaml.get("test_topology").get(
+    "function_test_topology").get("blueprint").get("blueprint_name")
+
+FUNCTION_TEST_TPLGY_DEPLOY_NAME = test_env_config_yaml.get("test_topology").get(
+    "function_test_topology").get("blueprint").get("deployment_name")
+
+FUNCTION_TEST_TPLGY_INPUTS =  test_env_config_yaml.get("test_topology").get(
+    "function_test_topology").get("inputs")
+
+FUNCTION_TEST_TPLGY_DEFAULT = test_env_config_yaml.get("test_topology").get(
+    "function_test_topology").get("default")
+
+PERFORMANCE_TPLGY_BLUEPRINT = test_env_config_yaml.get("test_topology").get(
     "performance_test_topology").get("blueprint")
 
-PERFORMANCE_TPLGY_BP_NAME = vnftest_yaml.get("test_topology").get(
+PERFORMANCE_TPLGY_BP_NAME = test_env_config_yaml.get("test_topology").get(
     "performance_test_topology").get("blueprint").get(
     "blueprint_name")
 
-PERFORMANCE_TPLGY_DEPLOY_NAME = vnftest_yaml.get("test_topology").get(
+PERFORMANCE_TPLGY_DEPLOY_NAME = test_env_config_yaml.get("test_topology").get(
     "performance_test_topology").get("blueprint").get(
     "deployment_name")
+
+REBOOT_WAIT = test_env_config_yaml.get("general").get(
+    "reboot_wait")
 
 
 class vRouter:
@@ -242,24 +229,23 @@ class vRouter:
                             vRouter_data_path,
                             branch=TEST_DATA['branch'])
 
-        testcfg_yaml_dir = "opnfv-vnf-data/test_config.yaml"
-        test_config_file = open(VNF_DATA_DIR + testcfg_yaml_dir,
+        testcfg_yaml_dir = "opnfv-vnf-data/test_scenario.yaml"
+        test_scenario_file = open(VNF_DATA_DIR + testcfg_yaml_dir,
                                 'r')
-        self.test_config_yaml = yaml.safe_load(test_config_file)
-        test_config_file.close()
+        self.test_scenario_yaml = yaml.safe_load(test_scenario_file)
+        test_scenario_file.close()
 
         self.cfy_manager_ip = self.util.get_cfy_manager_address(cfy,
                                                                 VNF_DATA_DIR)
 
         self.logger.debug("cfy manager address : %s" % self.cfy_manager_ip)
 
-    def function_test_vRouter(self, cfy, function_test_config):
-        target_vnf_name = function_test_config["target_vnf_name"]
-        test_protocol = function_test_config["test_protocol_kind"]
-        test_list = function_test_config[test_protocol]
+    def function_test_vRouter(self, cfy, target_vnf_name, test_info):
+        test_protocol = test_info["protocol"]
+        test_list = test_info[test_protocol]
 
         vnf_info_list = self.util.get_vnf_info_list(self.cfy_manager_ip,
-                                                    TPLGY_DEPLOY_NAME,
+                                                    FUNCTION_TEST_TPLGY_DEPLOY_NAME,
                                                     target_vnf_name)
 
         self.logger.debug("request vnf's reboot.")
@@ -308,13 +294,14 @@ class vRouter:
 
         return result
 
-    def performance_test_vRouter(self, cfy, performance_test_config):
-        input_parameter = performance_test_config["input_parameter"]
+    def performance_test_vRouter(self, cfy, performance_test_scenario,
+                                 performance_test_info):
+        input_parameter = performance_test_info["input_parameter"]
 
         vnf_info_list = self.util.get_vnf_info_list_for_performance_test(
                                       self.cfy_manager_ip,
                                       PERFORMANCE_TPLGY_DEPLOY_NAME,
-                                      performance_test_config)
+                                      performance_test_scenario)
 
         target_vnf = self.util.get_target_vnf(vnf_info_list)
         if target_vnf is None:
@@ -333,10 +320,6 @@ class vRouter:
             return self.step_failure(
                 "testing_vRouter",
                 "Error : receive_tester_vm is None.")
-
-        self.logger.debug("request vnf's reboot.")
-        self.util.request_vnf_reboot(vnf_info_list)
-        time.sleep(120)
 
         test_exec = Performance_test_exec(self.util_info)
 
@@ -364,31 +347,34 @@ class vRouter:
                             duration,
                             "OK")
 
-        self.logger.debug("request vm's delete.")
-        self.util.request_vm_delete(vnf_info_list)
+        self.vnf_info_list = vnf_info_list
 
         return result
 
     def test_vRouter(self, cfy):
         result = False
 
-        test_config_list = self.test_config_yaml["test_config_list"]
+        test_scenario_list = self.test_scenario_yaml["test_scenario_list"]
 
-        for test_config in test_config_list:
-            if test_config["topology_type"] == "function_test":
+        for test_scenario in test_scenario_list:
+            if test_scenario["test_type"] == "function_test":
+                function_test_scenario = test_scenario
+
                 # FUNCTION TEST TOPOLOGY INITIALISATION
-                function_tplgy = topology(TPLGY_INPUTS,
+                function_tplgy = topology(FUNCTION_TEST_TPLGY_INPUTS,
                                           cfy,
                                           self.logger)
 
-                result_data = self.init_function_testToplogy(function_tplgy)
+                result_data = self.init_function_testToplogy(function_tplgy,
+                                                             function_test_scenario)
                 if result_data["status"] == "FAIL":
                     return result_data
 
                 # FUNCTION TEST TOPOLOGY DEPLOYMENT
-                blueprint_info = {"url": TPLGY_BLUEPRINT,
-                                  "blueprint_name": TPLGY_BP_NAME,
-                                  "deployment_name": TPLGY_DEPLOY_NAME}
+                blueprint_info = \
+                    {"url": FUNCTION_TEST_TPLGY_BLUEPRINT,
+                     "blueprint_name": FUNCTION_TEST_TPLGY_BP_NAME,
+                     "deployment_name": FUNCTION_TEST_TPLGY_DEPLOY_NAME}
 
                 result_data = self.deploy_testToplogy(function_tplgy,
                                                       blueprint_info)
@@ -398,22 +384,28 @@ class vRouter:
                 time.sleep(120)
 
                 # FUNCTION TEST EXECUTION
-                function_test_list = test_config["function_test_list"]
+                function_test_list = function_test_scenario["function_test_list"]
                 for function_test in function_test_list:
-                    self.logger.info(function_test["test_protocol_kind"] +
-                                     " test")
-                    result = self.function_test_vRouter(cfy, function_test)
-                    if not result:
-                        break
+                    test_list = function_test["test_list"]
+                    target_vnf_name = function_test["target_vnf_name"]
+                    for test_info in test_list:
+                        self.logger.info(test_info["protocol"] + " " +
+                                         test_info["test_kind"] +
+                                         " test.")
+                        result = self.function_test_vRouter(cfy,
+                                                            target_vnf_name,
+                                                            test_info)
+                        if not result:
+                            break
 
                 self.logger.debug("request vnf's delete.")
                 self.util.request_vm_delete(self.vnf_info_list)
 
                 # FUNCTION TEST TOPOLOGY UNDEPLOYMENT
-                function_tplgy.undeploy_vnf(TPLGY_DEPLOY_NAME)
+                function_tplgy.undeploy_vnf(FUNCTION_TEST_TPLGY_DEPLOY_NAME)
 
-            elif test_config["topology_type"] == "performance_test":
-                performance_test_config = test_config
+            elif test_scenario["test_type"] == "performance_test":
+                performance_test_scenario = test_scenario
 
                 # PERFORMANCE_ TEST TOPOLOGY INITIALISATION
                 performance_tplgy = topology(orchestrator=cfy,
@@ -421,7 +413,7 @@ class vRouter:
 
                 result_data = self.init_performance_testToplogy(
                                        performance_tplgy,
-                                       performance_test_config)
+                                       performance_test_scenario)
                 if result_data["status"] == "FAIL":
                     return result_data
 
@@ -437,9 +429,15 @@ class vRouter:
                     return result_data
 
                 # PERFORMANCE TEST EXECUTION
-                result = self.performance_test_vRouter(
-                                  cfy,
-                                  performance_test_config)
+                performance_test_list = performance_test_scenario["performance_test_list"]
+                for performance_test_info in performance_test_list:
+                    result = self.performance_test_vRouter(
+                                      cfy,
+                                      performance_test_scenario,
+                                      performance_test_info)
+
+                self.logger.debug("request vnf's delete.")
+                self.util.request_vm_delete(self.vnf_info_list)
 
                 # PERFORMANCE TEST TOPOLOGY UNDEPLOYMENT
                 performance_tplgy.undeploy_vnf(PERFORMANCE_TPLGY_DEPLOY_NAME)
@@ -697,22 +695,54 @@ class vRouter:
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
 
-    def init_function_testToplogy(self, tplgy):
-        self.logger.info("Collect flavor id for all topology vm")
+    def init_function_testToplogy(self, tplgy, function_test_config):
+        self.logger.info("Collect flavor id for all topology vnf")
         nova = nvclient.Client("2",
                                **self.nv_cresds)
 
-        target_vnf_flavor_id = TPLGY_TGT_FLAVOR_ID
-        target_vnf_image_id = TPLGY_TGT_IMAGE_ID
-        reference_vnf_flavor_id = TPLGY_REF_FLAVOR_ID
-        reference_vnf_image_id = TPLGY_REF_IMAGE_ID
+        vnf_list = function_test_config["vnf_list"]
+        target_vnf = self.util.get_vnf_info(vnf_list, "target_vnf")
+        reference_vnf = self.util.get_vnf_info(vnf_list, "reference_vnf")
+
+        target_vnf_image_name = target_vnf["image_name"]
+        target_vnf_flavor_name = target_vnf["flavor_name"]
+        self.logger.debug("target_vnf image name : " + target_vnf_image_name)
+        self.logger.debug("target_vnf flavor name : " + target_vnf_flavor_name)
+
+        reference_vnf_image_name = reference_vnf["image_name"]
+        reference_vnf_flavor_name = reference_vnf["flavor_name"]
+        self.logger.debug("reference_vnf image name : " + reference_vnf_image_name)
+        self.logger.debug("reference_vnf flavor name : " + reference_vnf_flavor_name)
+
+        nova = nvclient.Client("2",
+                               **self.nv_cresds)
+
+        target_vnf_flavor_id = os_utils.get_flavor_id(
+            nova,
+            target_vnf_flavor_name)
 
         if target_vnf_flavor_id == '':
-            for requirement in TPLGY_REQUIERMENTS:
+            return self.step_failure(
+                "making_testTopology",
+                "Error : Failed to find flavor for target vnf")
+
+        tplgy.set_target_vnf_flavor_id(target_vnf_flavor_id)
+
+        reference_vnf_flavor_id = os_utils.get_flavor_id(
+            nova,
+            reference_vnf_flavor_name)
+
+        if reference_vnf_flavor_id == '':
+            return self.step_failure(
+                "making_testTopology",
+                "Error : Failed to find flavor for tester vm")
+
+        if target_vnf_flavor_id == '':
+            for requirement in FUNCTION_TEST_TPLGY_DEFAULT:
                 if requirement == 'ram_min':
                     target_vnf_flavor_id = os_utils.get_flavor_id_by_ram_range(
                         nova,
-                        TPLGY_REQUIERMENTS['ram_min'],
+                        FUNCTION_TEST_TPLGY_DEFAULT['ram_min'],
                         8196)
 
             self.logger.info("target_vnf_flavor_id id search set")
@@ -720,38 +750,39 @@ class vRouter:
         tplgy.set_reference_vnf_flavor_id(target_vnf_flavor_id)
 
         if reference_vnf_flavor_id == '':
-            for requirement in TPLGY_REQUIERMENTS:
+            for requirement in FUNCTION_TEST_TPLGY_DEFAULT:
                 if requirement == 'ram_min':
                     reference_vnf_flavor_id = \
                         os_utils.get_flavor_id_by_ram_range(
                             nova,
-                            TPLGY_REQUIERMENTS['ram_min'],
+                            FUNCTION_TEST_TPLGY_DEFAULT['ram_min'],
                             8196)
 
             self.logger.info("reference_vnf_flavor_id id search set")
 
         tplgy.set_target_vnf_flavor_id(reference_vnf_flavor_id)
 
-        if reference_vnf_image_id == '' or target_vnf_image_id == '':
-            image_name = TPLGY_IMAGE_NAME
-            image_id = os_utils.get_image_id(self.glance,
-                                             image_name)
-            for requirement in TPLGY_REQUIERMENTS:
-                if requirement == 'os_image':
-                    image_id = os_utils.get_image_id(
-                                  self.glance,
-                                  TPLGY_REQUIERMENTS['os_image'])
-
-        if image_id == '':
-            return self.step_failure(
-               "making_testTopology",
-               "Error : Failed to find required OS image for cloudify manager")
-
-        if reference_vnf_image_id == '':
-            tplgy.set_reference_vnf_image_id(image_id)
+        target_vnf_image_id = os_utils.get_image_id(
+            self.glance,
+            target_vnf_image_name)
 
         if target_vnf_image_id == '':
-            tplgy.set_target_vnf_image_id(image_id)
+            return self.step_failure(
+               "making_testTopology",
+               "Error : Failed to find required OS image for target vnf")
+
+        tplgy.set_target_vnf_image_id(target_vnf_image_id)
+
+        reference_vnf_image_id = os_utils.get_image_id(
+            self.glance,
+            reference_vnf_image_name)
+
+        if reference_vnf_image_id == '':
+            return self.step_failure(
+               "making_testTopology",
+               "Error : Failed to find required OS image for tester vm")
+
+        tplgy.set_reference_vnf_image_id(reference_vnf_image_id)
 
         tplgy.set_region("RegionOne")
 
@@ -773,8 +804,9 @@ class vRouter:
 
     def init_performance_testToplogy(self, tplgy, performance_test_config):
 
-        target_vnf = performance_test_config["vm"]["target_vnf"]
-        tester_vm = performance_test_config["vm"]["tester_vm"]
+        vnf_list = performance_test_config["vnf_list"]
+        target_vnf = self.util.get_vnf_info(vnf_list, "target_vnf")
+        tester_vm = self.util.get_vnf_info(vnf_list, "tester_vm")
 
         target_vnf_flavor_name = target_vnf["flavor_name"]
         target_vnf_image_name = target_vnf["image_name"]

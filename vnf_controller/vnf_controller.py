@@ -31,13 +31,20 @@ with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
     functest_yaml = yaml.safe_load(f)
 f.close()
 
-REBOOT_WAIT = functest_yaml.get("vRouter").get("general").get("reboot_wait")
-COMMAND_WAIT = functest_yaml.get("vRouter").get("general").get("command_wait")
-SSH_CONNECT_TIMEOUT = functest_yaml.get("vRouter").get("general").get(
-    "ssh_connect_timeout")
-SSH_CONNECT_RETRY_COUNT = functest_yaml.get("vRouter").get("general").get(
-    "ssh_connect_retry_count")
+VNF_DATA_DIR = functest_yaml.get("general").get(
+    "directories").get("dir_vRouter_data") + "/"
 
+TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + "opnfv-vnf-data/test_env_config.yaml"
+with open(TEST_ENV_CONFIG_YAML) as f:
+    test_env_config_yaml = yaml.safe_load(f)
+f.close()
+
+REBOOT_WAIT = test_env_config_yaml.get("general").get("reboot_wait")
+COMMAND_WAIT = test_env_config_yaml.get("general").get("command_wait")
+SSH_CONNECT_TIMEOUT = test_env_config_yaml.get("general").get(
+    "ssh_connect_timeout")
+SSH_CONNECT_RETRY_COUNT = test_env_config_yaml.get("general").get(
+    "ssh_connect_retry_count")
 
 class VNF_controller():
 
