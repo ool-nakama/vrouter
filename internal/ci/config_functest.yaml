@@ -165,17 +165,9 @@ vRouter:
             ram_min: 8000
             os_image: centos_7
         inputs:
-            keystone_username: ""
-            keystone_password: ""
-            keystone_tenant_name: ""
-            keystone_url: ""
             manager_public_key_name: 'manager-kp'
             agent_public_key_name: 'agent-kp'
-            image_id: ""
-            flavor_id: "3"
-            external_network_name: ""
             ssh_user: centos
-            agents_user: ubuntu
 ONOS:
     general:
         onosbench_username: 'root'

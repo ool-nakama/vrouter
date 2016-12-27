@@ -93,9 +93,6 @@ FUNCTION_TEST_TPLGY_BP_NAME = test_env_config_yaml.get("test_topology").get(
 FUNCTION_TEST_TPLGY_DEPLOY_NAME = test_env_config_yaml.get("test_topology").get(
     "function_test_topology").get("blueprint").get("deployment_name")
 
-FUNCTION_TEST_TPLGY_INPUTS =  test_env_config_yaml.get("test_topology").get(
-    "function_test_topology").get("inputs")
-
 FUNCTION_TEST_TPLGY_DEFAULT = test_env_config_yaml.get("test_topology").get(
     "function_test_topology").get("default")
 
@@ -109,6 +106,9 @@ PERFORMANCE_TPLGY_BP_NAME = test_env_config_yaml.get("test_topology").get(
 PERFORMANCE_TPLGY_DEPLOY_NAME = test_env_config_yaml.get("test_topology").get(
     "performance_test_topology").get("blueprint").get(
     "deployment_name")
+
+PERFORMANCE_TEST_TPLGY_DEFAULT = test_env_config_yaml.get("test_topology").get(
+    "performance_test_topology").get("default")
 
 REBOOT_WAIT = test_env_config_yaml.get("general").get(
     "reboot_wait")
@@ -361,9 +361,8 @@ class vRouter:
                 function_test_scenario = test_scenario
 
                 # FUNCTION TEST TOPOLOGY INITIALISATION
-                function_tplgy = topology(FUNCTION_TEST_TPLGY_INPUTS,
-                                          cfy,
-                                          self.logger)
+                function_tplgy = topology(orchestrator=cfy,
+                                          logger=self.logger)
 
                 result_data = self.init_function_testToplogy(function_tplgy,
                                                              function_test_scenario)
@@ -704,22 +703,41 @@ class vRouter:
         target_vnf = self.util.get_vnf_info(vnf_list, "target_vnf")
         reference_vnf = self.util.get_vnf_info(vnf_list, "reference_vnf")
 
-        target_vnf_image_name = target_vnf["image_name"]
-        target_vnf_flavor_name = target_vnf["flavor_name"]
+        target_vnf_image_name = ""
+        if "image_name" in target_vnf:
+            target_vnf_image_name = target_vnf["image_name"]
+        target_vnf_flavor_name = ""
+        if "flavor_name" in target_vnf:
+            target_vnf_flavor_name = target_vnf["flavor_name"]
         self.logger.debug("target_vnf image name : " + target_vnf_image_name)
         self.logger.debug("target_vnf flavor name : " + target_vnf_flavor_name)
 
-        reference_vnf_image_name = reference_vnf["image_name"]
-        reference_vnf_flavor_name = reference_vnf["flavor_name"]
+        reference_vnf_image_name = ""
+        if "image_name" in reference_vnf:
+            reference_vnf_image_name = reference_vnf["image_name"]
+        reference_vnf_flavor_name = ""
+        if "flavor_name" in reference_vnf:
+            reference_vnf_flavor_name = reference_vnf["flavor_name"]
         self.logger.debug("reference_vnf image name : " + reference_vnf_image_name)
         self.logger.debug("reference_vnf flavor name : " + reference_vnf_flavor_name)
 
         nova = nvclient.Client("2",
                                **self.nv_cresds)
 
+        # Setting the flavor id for target vnf.
         target_vnf_flavor_id = os_utils.get_flavor_id(
-            nova,
-            target_vnf_flavor_name)
+                                            nova,
+                                            target_vnf_flavor_name)
+
+        if target_vnf_flavor_id == '':
+            for default in FUNCTION_TEST_TPLGY_DEFAULT:
+                if default == 'ram_min':
+                    target_vnf_flavor_id = os_utils.get_flavor_id_by_ram_range(
+                        nova,
+                        FUNCTION_TEST_TPLGY_DEFAULT['ram_min'],
+                        8196)
+
+            self.logger.info("target_vnf_flavor_id id search set")
 
         if target_vnf_flavor_id == '':
             return self.step_failure(
@@ -728,30 +746,14 @@ class vRouter:
 
         tplgy.set_target_vnf_flavor_id(target_vnf_flavor_id)
 
+        # Setting the flavor id for reference vnf.
         reference_vnf_flavor_id = os_utils.get_flavor_id(
             nova,
             reference_vnf_flavor_name)
 
         if reference_vnf_flavor_id == '':
-            return self.step_failure(
-                "making_testTopology",
-                "Error : Failed to find flavor for tester vm")
-
-        if target_vnf_flavor_id == '':
-            for requirement in FUNCTION_TEST_TPLGY_DEFAULT:
-                if requirement == 'ram_min':
-                    target_vnf_flavor_id = os_utils.get_flavor_id_by_ram_range(
-                        nova,
-                        FUNCTION_TEST_TPLGY_DEFAULT['ram_min'],
-                        8196)
-
-            self.logger.info("target_vnf_flavor_id id search set")
-
-        tplgy.set_reference_vnf_flavor_id(target_vnf_flavor_id)
-
-        if reference_vnf_flavor_id == '':
-            for requirement in FUNCTION_TEST_TPLGY_DEFAULT:
-                if requirement == 'ram_min':
+            for default in FUNCTION_TEST_TPLGY_DEFAULT:
+                if default == 'ram_min':
                     reference_vnf_flavor_id = \
                         os_utils.get_flavor_id_by_ram_range(
                             nova,
@@ -760,11 +762,24 @@ class vRouter:
 
             self.logger.info("reference_vnf_flavor_id id search set")
 
-        tplgy.set_target_vnf_flavor_id(reference_vnf_flavor_id)
+        if reference_vnf_flavor_id == '':
+            return self.step_failure(
+                "making_testTopology",
+                "Error : Failed to find flavor for tester vm")
 
+        tplgy.set_reference_vnf_flavor_id(reference_vnf_flavor_id)
+
+        # Setting the image id for target vnf.
         target_vnf_image_id = os_utils.get_image_id(
             self.glance,
             target_vnf_image_name)
+
+        if target_vnf_image_id == '':
+            for default in FUNCTION_TEST_TPLGY_DEFAULT:
+                if default == 'os_image':
+                    target_vnf_image_id = os_utils.get_image_id(
+                        self.glance,
+                        FUNCTION_TEST_TPLGY_DEFAULT['os_image'])
 
         if target_vnf_image_id == '':
             return self.step_failure(
@@ -773,14 +788,22 @@ class vRouter:
 
         tplgy.set_target_vnf_image_id(target_vnf_image_id)
 
+        # Setting the image id for reference vnf.
         reference_vnf_image_id = os_utils.get_image_id(
             self.glance,
             reference_vnf_image_name)
 
         if reference_vnf_image_id == '':
+            for default in FUNCTION_TEST_TPLGY_DEFAULT:
+                if default == 'os_image':
+                    reference_vnf_image_id = os_utils.get_image_id(
+                        self.glance,
+                        FUNCTION_TEST_TPLGY_DEFAULT['os_image'])
+
+        if reference_vnf_image_id == '':
             return self.step_failure(
                "making_testTopology",
-               "Error : Failed to find required OS image for tester vm")
+               "Error : Failed to find required OS image for reference vnf.")
 
         tplgy.set_reference_vnf_image_id(reference_vnf_image_id)
 
@@ -808,18 +831,39 @@ class vRouter:
         target_vnf = self.util.get_vnf_info(vnf_list, "target_vnf")
         tester_vm = self.util.get_vnf_info(vnf_list, "tester_vm")
 
-        target_vnf_flavor_name = target_vnf["flavor_name"]
-        target_vnf_image_name = target_vnf["image_name"]
-        tester_vm_flavor_name = tester_vm["flavor_name"]
-        tester_vm_image_name = tester_vm["image_name"]
+        target_vnf_image_name = ""
+        if "image_name" in target_vnf:
+            target_vnf_image_name = target_vnf["image_name"]
+        target_vnf_flavor_name = ""
+        if "flavor_name" in target_vnf:
+            target_vnf_flavor_name = target_vnf["flavor_name"]
+        self.logger.debug("target_vnf image name : " + target_vnf_image_name)
+        self.logger.debug("target_vnf flavor name : " + target_vnf_flavor_name)
 
-        self.logger.info("Collect flavor id for all topology vm")
+        tester_vm_image_name = ""
+        if "image_name" in tester_vm:
+            tester_vm_image_name = tester_vm["image_name"]
+        tester_vm_flavor_name = ""
+        if "flavor_name" in tester_vm:
+            tester_vm_flavor_name = tester_vm["flavor_name"]
+        self.logger.debug("tester vm image name : " + tester_vm_image_name)
+        self.logger.debug("tester vm flavor name : " + tester_vm_flavor_name)
+
         nova = nvclient.Client("2",
                                **self.nv_cresds)
 
+        # Setting the flavor id for target vnf.
         target_vnf_flavor_id = os_utils.get_flavor_id(
             nova,
             target_vnf_flavor_name)
+
+        if target_vnf_flavor_id == '':
+            for default in PERFORMANCE_TEST_TPLGY_DEFAULT:
+                if default == 'ram_min':
+                    target_vnf_flavor_id = os_utils.get_flavor_id_by_ram_range(
+                        nova,
+                        PERFORMANCE_TEST_TPLGY_DEFAULT['ram_min'],
+                        8196)
 
         if target_vnf_flavor_id == '':
             return self.step_failure(
@@ -828,9 +872,18 @@ class vRouter:
 
         tplgy.set_target_vnf_flavor_id(target_vnf_flavor_id)
 
+        # Setting the flavor id for tester vm.
         tester_vm_flavor_id = os_utils.get_flavor_id(
             nova,
             tester_vm_flavor_name)
+
+        if tester_vm_flavor_id == '':
+            for default in PERFORMANCE_TEST_TPLGY_DEFAULT:
+                if default == 'ram_min':
+                    tester_vm_flavor_id = os_utils.get_flavor_id_by_ram_range(
+                        nova,
+                        PERFORMANCE_TEST_TPLGY_DEFAULT['ram_min'],
+                        8196)
 
         if tester_vm_flavor_id == '':
             return self.step_failure(
@@ -840,9 +893,17 @@ class vRouter:
         tplgy.set_send_tester_vm_flavor_id(tester_vm_flavor_id)
         tplgy.set_receive_tester_vm_flavor_id(tester_vm_flavor_id)
 
+        # Setting the image id for target vnf.
         target_vnf_image_id = os_utils.get_image_id(
             self.glance,
             target_vnf_image_name)
+
+        if target_vnf_image_id == '':
+            for default in PERFORMANCE_TEST_TPLGY_DEFAULT:
+                if default == 'vnf_os_image':
+                    target_vnf_image_id = os_utils.get_image_id(
+                        self.glance,
+                        PERFORMANCE_TEST_TPLGY_DEFAULT['vnf_os_image'])
 
         if target_vnf_image_id == '':
             return self.step_failure(
@@ -851,9 +912,17 @@ class vRouter:
 
         tplgy.set_target_vnf_image_id(target_vnf_image_id)
 
+        # Setting the image id for target vnf.
         tester_vm_image_id = os_utils.get_image_id(
             self.glance,
             tester_vm_image_name)
+
+        if tester_vm_image_id == '':
+            for default in PERFORMANCE_TEST_TPLGY_DEFAULT:
+                if default == 'tester_os_image':
+                    tester_vm_image_id = os_utils.get_image_id(
+                        self.glance,
+                        PERFORMANCE_TEST_TPLGY_DEFAULT['tester_os_image'])
 
         if tester_vm_image_id == '':
             return self.step_failure(
