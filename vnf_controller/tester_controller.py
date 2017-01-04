@@ -73,11 +73,11 @@ class tester_controller():
         cmd_input_param.update(input_parameter)
 
         cmd_input_param["macaddress"] = \
-            source_tester["send_side_traffic_plane_network_mac"]
+            source_tester["send_data_plane_network_mac"]
         cmd_input_param["dst_ip"] = \
-            destination_tester["receive_side_traffic_plane_network_ip"]
+            destination_tester["receive_data_plane_network_ip"]
         cmd_input_param["gw_ip"] = \
-            target_vnf["send_side_traffic_plane_network_ip"]
+            target_vnf["send_data_plane_network_ip"]
 
         source_tester["pass"] = None
 
@@ -114,9 +114,9 @@ class tester_controller():
         cmd_input_param.update(input_parameter)
 
         cmd_input_param["macaddress"] = \
-            source_tester["receive_side_traffic_plane_network_mac"]
+            source_tester["receive_data_plane_network_mac"]
         cmd_input_param["gw_ip"] = \
-            target_vnf["receive_side_traffic_plane_network_ip"]
+            target_vnf["receive_data_plane_network_ip"]
 
         source_tester["pass"] = None
 
@@ -161,9 +161,9 @@ class tester_controller():
             time.sleep(COMMAND_WAIT)
 
         input_parameter["client_ip"] = \
-            destination_tester["send_side_traffic_plane_network_ip"]
+            destination_tester["send_data_plane_network_ip"]
         input_parameter["server_ip"] = \
-            source_tester["receive_side_traffic_plane_network_ip"]
+            source_tester["receive_data_plane_network_ip"]
 
         return self.output_result_data(res_data_list, input_parameter)
 

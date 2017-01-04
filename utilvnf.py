@@ -245,13 +245,13 @@ class utilvnf:
                               vnf["floating_ip"])
 
             for network in network_list:
-                if vnf_name == "send_side_testar_vm":
+                if vnf_name == "send_tester_vm":
                     if network["network_name"] == \
-                       "receive_side_traffic_plane_network":
+                       "receive_data_plane_network":
                         continue
-                elif vnf_name == "receive_side_testar_vm":
+                elif vnf_name == "receive_tester_vm":
                     if network["network_name"] == \
-                       "send_side_traffic_plane_network":
+                       "send_data_plane_network":
                         continue
 
                 ip = self.get_address(vnf["vnf_name"],
@@ -284,10 +284,10 @@ class utilvnf:
         return reference_vnf_list
 
     def get_send_tester_vm(self, vnf_info_list):
-        return self.get_vnf_info(vnf_info_list, "send_side_testar_vm")
+        return self.get_vnf_info(vnf_info_list, "send_tester_vm")
 
     def get_receive_tester_vm(self, vnf_info_list):
-        return self.get_vnf_info(vnf_info_list, "receive_side_testar_vm")
+        return self.get_vnf_info(vnf_info_list, "receive_tester_vm")
 
     def request_vnf_reboot(self, vnf_info_list):
         for vnf in vnf_info_list:
