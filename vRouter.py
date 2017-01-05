@@ -52,6 +52,10 @@ parser.add_argument("-n",
                     help="Don't clean the created resources for this test.",
                     action="store_true")
 
+OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
+TEST_SCENATIO_YAML = "test_scenario.yaml"
+TEST_ENV_CONFIG_YAML = "test_env_config.yaml"
+
 with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
     functest_yaml = yaml.safe_load(f)
 f.close()
@@ -76,13 +80,19 @@ CFY_MANAGER_REQUIERMENTS = functest_yaml.get(
 CFY_INPUTS = functest_yaml.get("vRouter").get("cloudify").get("inputs")
 
 
-TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + "opnfv-vnf-data/test_env_config.yaml"
-with open(TEST_ENV_CONFIG_YAML) as f:
+TEST_ENV_CONFIG_YAML_FILE_PATH = VNF_DATA_DIR + \
+                                 OPNFV_VNF_DATA_DIR + \
+                                 TEST_ENV_CONFIG_YAML
+with open(TEST_ENV_CONFIG_YAML_FILE_PATH) as f:
     test_env_config_yaml = yaml.safe_load(f)
 f.close()
 
 VNF_TEST_IMAGES = test_env_config_yaml.get("general").get("images")
 IMAGES.update(VNF_TEST_IMAGES)
+
+TEST_SCENATIO_YAML_FILE_PATH = VNF_DATA_DIR + \
+                               OPNFV_VNF_DATA_DIR + \
+                               TEST_SCENATIO_YAML
 
 FUNCTION_TEST_TPLGY_BLUEPRINT = test_env_config_yaml.get("test_topology").get(
     "function_test_topology").get("blueprint")
@@ -204,36 +214,9 @@ class vRouter:
         return result_data
 
     def init_vRouter_test(self, cfy):
-        credentials = {"username": TENANT_NAME,
-                       "password": TENANT_NAME,
-                       "auth_url": os.environ['OS_AUTH_URL'],
-                       "tenant_name": TENANT_NAME,
-                       "region_name": os.environ['OS_REGION_NAME']}
-
-        self.util_info = {"credentials": credentials,
+        self.util_info = {"credentials": self.credentials,
                           "cfy": cfy,
                           "vnf_data_dir": VNF_DATA_DIR}
-
-        self.util = utilvnf(self.logger)
-        self.util.set_credentials(credentials["username"],
-                                  credentials["password"],
-                                  credentials["auth_url"],
-                                  credentials["tenant_name"],
-                                  credentials["region_name"])
-
-        self.logger.debug("Downloading the test data.")
-        vRouter_data_path = VNF_DATA_DIR + "opnfv-vnf-data/"
-
-        if not os.path.exists(vRouter_data_path):
-            Repo.clone_from(TEST_DATA['url'],
-                            vRouter_data_path,
-                            branch=TEST_DATA['branch'])
-
-        testcfg_yaml_dir = "opnfv-vnf-data/test_scenario.yaml"
-        test_scenario_file = open(VNF_DATA_DIR + testcfg_yaml_dir,
-                                'r')
-        self.test_scenario_yaml = yaml.safe_load(test_scenario_file)
-        test_scenario_file.close()
 
         self.cfy_manager_ip = self.util.get_cfy_manager_address(cfy,
                                                                 VNF_DATA_DIR)
@@ -574,6 +557,39 @@ class vRouter:
                 "init",
                 "Failed to update security group quota for tenant " +
                 TENANT_NAME)
+
+        self.credentials = {"username": TENANT_NAME,
+                            "password": TENANT_NAME,
+                            "auth_url": os.environ['OS_AUTH_URL'],
+                            "tenant_name": TENANT_NAME,
+                            "region_name": os.environ['OS_REGION_NAME']}
+
+        self.util = utilvnf(self.logger)
+        self.util.set_credentials(self.credentials["username"],
+                                  self.credentials["password"],
+                                  self.credentials["auth_url"],
+                                  self.credentials["tenant_name"],
+                                  self.credentials["region_name"])
+
+        self.logger.debug("Downloading the test data.")
+        vRouter_data_path = VNF_DATA_DIR + OPNFV_VNF_DATA_DIR
+
+        if not os.path.exists(vRouter_data_path):
+            Repo.clone_from(TEST_DATA['url'],
+                            vRouter_data_path,
+                            branch=TEST_DATA['branch'])
+
+        test_scenario_file = open(TEST_SCENATIO_YAML_FILE_PATH,
+                                'r')
+        self.test_scenario_yaml = yaml.safe_load(test_scenario_file)
+        test_scenario_file.close()
+
+        res = self.util.test_scenario_validation_check(self.test_scenario_yaml)
+        if res["status"] is False:
+            self.logger.error(res["message"])
+            return self.step_failure(
+                           "init",
+                           "Error : Faild to test scenario format")
 
         end_time_ts = time.time()
         duration = round(end_time_ts - start_time_ts,

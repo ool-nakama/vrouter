@@ -413,3 +413,103 @@ class utilvnf:
                     "====================================")
 
         return
+
+    def test_scenario_validation_check(self, test_scenario_yaml):
+        res = {
+            "status" : True,
+            "message" : ""
+        }
+
+        if "test_scenario_list" not in test_scenario_yaml:
+            res["status"] = False
+            res["message"] = "Test scenario format error : " +\
+                               "test_scenario_list key not found."
+            return res
+
+        test_scenario_list = test_scenario_yaml["test_scenario_list"]
+
+        for test_scenario in test_scenario_list:
+            if "test_type" not in test_scenario:
+                res["status"] = False
+                res["message"] = "Test scenario format error : " + \
+                                   "test_type key not found."
+                return res
+            if test_scenario["test_type"] == "function_test":
+                if "function_test_list" not in test_scenario:
+                    res["status"] = False
+                    res["message"] = "Test scenario format error : " + \
+                                       "function_test_list key not found."
+                    return res
+                function_test_list = test_scenario["function_test_list"]
+                if not isinstance(function_test_list, list):
+                    res["status"] = False
+                    res["message"] = "Test scenario format error : " + \
+                                       "function test list not found."
+                    return res
+                for function_test in function_test_list:
+                    if "target_vnf_name" not in function_test:
+                        res["status"] = False
+                        res["message"] = "Test scenario format error : " + \
+                                           "target_vnf_name key not found."
+                        return res
+                    if "test_list" not in function_test:
+                        res["status"] = False
+                        res["message"] = "Test scenario format error : " + \
+                                           "test_list key not found."
+                        return res
+                    test_list = function_test["test_list"]
+                    if not isinstance(test_list, list):
+                        res["status"] = False
+                        res["message"] = "Test scenario format error : " + \
+                                           "test list not found."
+                        return res
+                    for test_info in test_list:
+                        if "test_kind" not in test_info:
+                            res["status"] = False
+                            res["message"] = "Test scenario format error : " + \
+                                               "test_kind key not found."
+                            return res
+                        if "protocol" not in test_info:
+                            res["status"] = False
+                            res["message"] = "Test scenario format error : " + \
+                                               "protocol key not found."
+                            return res
+
+                        if "protocol" not in test_info:
+                            res["status"] = False
+                            res["message"] = "Test scenario format error : " + \
+                                               "protocol key not found."
+                            return res
+                        test_protocol = test_info["protocol"]
+                        if test_protocol not in test_info:
+                            res["status"] = False
+                            res["message"] = "Test scenario format error : " + \
+                                               "%s key not found." % test_protocol
+                            return res
+                        protocol_test_list = test_info[test_protocol]
+                        if not isinstance(protocol_test_list, list):
+                            res["status"] = False
+                            res["message"] = "Test scenario format error : " + \
+                                              "%s test list not found." % test_protocol
+                            return res
+
+            elif test_scenario["test_type"] == "performance_test":
+                if "performance_test_list" not in test_scenario:
+                    res["status"] = False
+                    res["message"] = "Test scenario format error : " + \
+                                       "performance_test_list key not found."
+                    return res
+                performance_test_list = test_scenario["performance_test_list"]
+                if not isinstance(performance_test_list, list):
+                    res["status"] = False
+                    res["message"] = "Test scenario format error : " + \
+                                       "performance test list not found."
+                    return res
+                for performance_test in performance_test_list:
+                    if "input_parameter" not in performance_test:
+                        res["status"] = False
+                        res["message"] = "Test scenario format error : " + \
+                                           "input_parameter key not found."
+                        return res
+
+        return res
