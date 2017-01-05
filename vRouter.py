@@ -123,6 +123,8 @@ PERFORMANCE_TEST_TPLGY_DEFAULT = test_env_config_yaml.get("test_topology").get(
 REBOOT_WAIT = test_env_config_yaml.get("general").get(
     "reboot_wait")
 
+TOPOLOGY_STABLE_WAIT= test_env_config_yaml.get("general").get(
+    "topology_stable_wait")
 
 class vRouter:
     def __init__(self, logger):
@@ -358,12 +360,12 @@ class vRouter:
                      "blueprint_name": FUNCTION_TEST_TPLGY_BP_NAME,
                      "deployment_name": FUNCTION_TEST_TPLGY_DEPLOY_NAME}
 
-                result_data = self.deploy_testToplogy(function_tplgy,
-                                                      blueprint_info)
+                result_data = self.deploy_testTopology(function_tplgy,
+                                                       blueprint_info)
                 if result_data["status"] == "FAIL":
                     return result_data
 
-                time.sleep(120)
+                time.sleep(TOPOLOGY_STABLE_WAIT)
 
                 # FUNCTION TEST EXECUTION
                 function_test_list = function_test_scenario["function_test_list"]
@@ -405,10 +407,12 @@ class vRouter:
                      "blueprint_name": PERFORMANCE_TPLGY_BP_NAME,
                      "deployment_name": PERFORMANCE_TPLGY_DEPLOY_NAME}
 
-                result_data = self.deploy_testToplogy(performance_tplgy,
-                                                      blueprint_info)
+                result_data = self.deploy_testTopology(performance_tplgy,
+                                                       blueprint_info)
                 if result_data["status"] == "FAIL":
                     return result_data
+
+                time.sleep(TOPOLOGY_STABLE_WAIT)
 
                 # PERFORMANCE TEST EXECUTION
                 performance_test_list = performance_test_scenario["performance_test_list"]
@@ -589,7 +593,7 @@ class vRouter:
             self.logger.error(res["message"])
             return self.step_failure(
                            "init",
-                           "Error : Faild to test scenario format")
+                           "Error : Faild to test execution.")
 
         end_time_ts = time.time()
         duration = round(end_time_ts - start_time_ts,
@@ -966,7 +970,7 @@ class vRouter:
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
 
-    def deploy_testToplogy(self, tplgy, blueprint_info):
+    def deploy_testTopology(self, tplgy, blueprint_info):
 
         start_time_ts = time.time()
         end_time_ts = start_time_ts

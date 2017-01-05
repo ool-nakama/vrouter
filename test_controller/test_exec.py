@@ -20,6 +20,11 @@ from vrouter.vnf_controller.vnf_controller import VNF_controller
 """ logging configuration """
 logger = ft_logger.Logger("vRouter.test_exec").getLogger()
 
+OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
+COMMAND_TEMPLATE_DIR = "command_template/"
+TEST_ENV_CONFIG_YAML_FILE = "test_env_config.yaml"
+TEST_CMD_MAP_YAML_FILE = "test_cmd_map.yaml"
+
 with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
     functest_yaml = yaml.safe_load(f)
 f.close()
@@ -27,7 +32,9 @@ f.close()
 VNF_DATA_DIR = functest_yaml.get("general").get(
     "directories").get("dir_vRouter_data") + "/"
 
-TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + "opnfv-vnf-data/test_env_config.yaml"
+TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
+                       OPNFV_VNF_DATA_DIR + \
+                       TEST_ENV_CONFIG_YAML_FILE
 with open(TEST_ENV_CONFIG_YAML) as f:
     test_env_config_yaml = yaml.safe_load(f)
 f.close()
@@ -44,8 +51,9 @@ class Test_exec():
         self.vnf_ctrl = VNF_controller(util_info)
 
         test_cmd_map_file = open(VNF_DATA_DIR +
-                                 "opnfv-vnf-data/command_template/" +
-                                 "test_cmd_map.yaml",
+                                 OPNFV_VNF_DATA_DIR +
+                                 COMMAND_TEMPLATE_DIR +
+                                 TEST_CMD_MAP_YAML_FILE,
                                  'r')
         self.test_cmd_map_yaml = yaml.safe_load(test_cmd_map_file)
         test_cmd_map_file.close()

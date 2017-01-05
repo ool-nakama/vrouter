@@ -22,6 +22,9 @@ from vrouter.vnf_controller.vm_controller import vm_controller
 """ logging configuration """
 logger = ft_logger.Logger("vRouter.vnf_controller").getLogger()
 
+OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
+TEST_ENV_CONFIG_YAML_FILE = "test_env_config.yaml"
+
 REPO_PATH = os.environ['repos_dir'] + '/functest/'
 if not os.path.exists(REPO_PATH):
     logger.error("Functest repository directory not found '%s'" % REPO_PATH)
@@ -34,7 +37,9 @@ f.close()
 VNF_DATA_DIR = functest_yaml.get("general").get(
     "directories").get("dir_vRouter_data") + "/"
 
-TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + "opnfv-vnf-data/test_env_config.yaml"
+TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
+                       OPNFV_VNF_DATA_DIR + \
+                       TEST_ENV_CONFIG_YAML_FILE
 with open(TEST_ENV_CONFIG_YAML) as f:
     test_env_config_yaml = yaml.safe_load(f)
 f.close()
