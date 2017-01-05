@@ -43,7 +43,7 @@ PROTOCOL_STABLE_WAIT = test_env_config_yaml.get("general").get(
     "protocol_stable_wait")
 
 
-class Test_exec():
+class Function_test_exec():
 
     def __init__(self, util_info):
         logger.debug("init test exec")

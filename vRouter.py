@@ -29,7 +29,7 @@ from neutronclient.v2_0 import client as ntclient
 import functest.utils.functest_utils as functest_utils
 import functest.utils.openstack_utils as os_utils
 
-from test_controller.test_exec import Test_exec
+from test_controller.function_test_exec import Function_test_exec
 from test_controller.performance_test_exec import Performance_test_exec
 from orchestrator import orchestrator
 from topology import topology
@@ -249,7 +249,7 @@ class vRouter:
                 "testing_vRouter",
                 "Error : reference_vnf_list is empty.")
 
-        test_exec = Test_exec(self.util_info)
+        test_exec = Function_test_exec(self.util_info)
 
         # start test
         start_time_ts = time.time()
