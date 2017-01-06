@@ -68,38 +68,33 @@ class tester_controller():
 
     def config_send_tester(self, source_tester, destination_tester, target_vnf,
                            pre_cmd_file_path, test_cmd_file_path,
-                           parameter_file_path, prompt_file_path,
-                           input_parameter):
-        parameter_file = open(parameter_file_path,
-                              'r')
-        cmd_input_param = yaml.safe_load(parameter_file)
-        parameter_file.close()
+                           prompt_file_path, input_parameter):
 
-        cmd_input_param.update(input_parameter)
-
-        cmd_input_param["macaddress"] = \
+        input_parameter["macaddress"] = \
             source_tester["send_data_plane_network_mac"]
-        cmd_input_param["dst_ip"] = \
+        input_parameter["dst_ip"] = \
             destination_tester["receive_data_plane_network_ip"]
-        cmd_input_param["gw_ip"] = \
+        input_parameter["gw_ip"] = \
             target_vnf["send_data_plane_network_ip"]
+        input_parameter["network_cidr"] = \
+            destination_tester["receive_data_plane_network_cidr"]
 
         source_tester["pass"] = None
 
         ssh = self.vm_controller.connect_ssh_and_config_vm(
                                              source_tester,
                                              pre_cmd_file_path,
-                                             cmd_input_param,
+                                             input_parameter,
                                              prompt_file_path)
 
         # execute peformance test command
-        count = cmd_input_param["count"]
+        count = input_parameter["count"]
         for i in range(count):
             (res, res_data_list) = \
                 self.vm_controller.command_create_and_execute(
                                             ssh,
                                             test_cmd_file_path,
-                                            cmd_input_param,
+                                            input_parameter,
                                             prompt_file_path)
             if not res:
                 break
@@ -109,36 +104,27 @@ class tester_controller():
 
     def config_receive_tester(self, source_tester,
                               destination_tester, target_vnf,
-                              test_cmd_file_path, parameter_file_path,
-                              prompt_file_path, input_parameter):
-        parameter_file = open(parameter_file_path,
-                              'r')
-        cmd_input_param = yaml.safe_load(parameter_file)
-        parameter_file.close()
+                              test_cmd_file_path, prompt_file_path,
+                              input_parameter):
 
-        cmd_input_param.update(input_parameter)
-
-        cmd_input_param["macaddress"] = \
+        input_parameter["macaddress"] = \
             source_tester["receive_data_plane_network_mac"]
-        cmd_input_param["gw_ip"] = \
+        input_parameter["gw_ip"] = \
             target_vnf["receive_data_plane_network_ip"]
+        input_parameter["network_cidr"] = \
+            destination_tester["send_data_plane_network_cidr"]
 
         source_tester["pass"] = None
 
         return self.vm_controller.connect_ssh_and_config_vm(
                                             source_tester,
                                             test_cmd_file_path,
-                                            cmd_input_param,
+                                            input_parameter,
                                             prompt_file_path)
 
     def result_check(self, ssh, source_tester, destination_tester,
-                     check_rule_file_path_list, parameter_file_path,
-                     prompt_file_path, input_parameter):
-        parameter_file = open(parameter_file_path,
-                              'r')
-        cmd_input_param = yaml.safe_load(parameter_file)
-        parameter_file.close()
-
+                     check_rule_file_path_list, prompt_file_path,
+                     input_parameter):
         prompt_file = open(prompt_file_path,
                            'r')
         prompt = yaml.safe_load(prompt_file)
@@ -154,7 +140,7 @@ class tester_controller():
                 os.path.split(check_rule_file_path)
             check_rules = checker.load_check_rule(check_rule_dir,
                                                   check_rule_file,
-                                                  cmd_input_param)
+                                                  input_parameter)
             (res, res_data) = self.vm_controller.command_execute(
                                         ssh,
                                         check_rules["command"],

@@ -281,7 +281,9 @@ class vRouter:
 
     def performance_test_vRouter(self, cfy, performance_test_scenario,
                                  performance_test_info):
-        input_parameter = performance_test_info["input_parameter"]
+
+        input_parameter = PERFORMANCE_TEST_TPLGY_DEFAULT["input_parameter"]
+        input_parameter.update(performance_test_info["input_parameter"])
 
         vnf_info_list = self.util.get_vnf_info_list_for_performance_test(
                                       self.cfy_manager_ip,

@@ -71,8 +71,6 @@ class Performance_test_exec():
         pre_test_cmd_file_path = \
             test_info["performance"]["performance_pre_command"]
         test_cmd_file_path = test_info["performance"]["performance_send"]
-        send_tester_parameter_file_path = test_info["performance"][
-                                            "parameter_send_tester"]
         prompt_file_path = test_info["prompt"]
 
         return self.tester_ctrl.config_send_tester(
@@ -81,7 +79,6 @@ class Performance_test_exec():
                                          target_vnf,
                                          pre_test_cmd_file_path,
                                          test_cmd_file_path,
-                                         send_tester_parameter_file_path,
                                          prompt_file_path,
                                          input_parameter)
 
@@ -90,8 +87,6 @@ class Performance_test_exec():
         logger.debug("Configuration to send tester vm")
         test_info = self.test_cmd_map_yaml[receive_tester_vm["os_type"]]
         test_cmd_file_path = test_info["performance"]["performance_receive"]
-        receive_tester_parameter_file_path = test_info["performance"][
-                                            "parameter_receive_tester"]
         prompt_file_path = test_info["prompt"]
 
         return self.tester_ctrl.config_receive_tester(
@@ -99,15 +94,12 @@ class Performance_test_exec():
                                          send_tester_vm,
                                          target_vnf,
                                          test_cmd_file_path,
-                                         receive_tester_parameter_file_path,
                                          prompt_file_path,
                                          input_parameter)
 
     def result_check(self, ssh, send_tester_vm, receive_tester_vm,
                      test_kind, test_list, input_parameter):
         test_info = self.test_cmd_map_yaml[send_tester_vm["os_type"]]
-        send_tester_parameter_file_path = \
-            test_info[test_kind]["parameter_receive_tester"]
         prompt_file_path = test_info["prompt"]
         check_rule_file_path_list = []
 
@@ -118,7 +110,6 @@ class Performance_test_exec():
                                              send_tester_vm,
                                              receive_tester_vm,
                                              check_rule_file_path_list,
-                                             send_tester_parameter_file_path,
                                              prompt_file_path,
                                              input_parameter)
 

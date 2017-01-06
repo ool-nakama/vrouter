@@ -264,12 +264,17 @@ class utilvnf:
                 mac = self.get_mac_address(vnf["vnf_name"],
                                            network["network_name"])
                 network_name = network["network_name"]
+                subnet_info = network["subnet_info"]
+                cidr = subnet_info["cidr"].split("/")[0]
                 vnf[network_name + "_ip"] = ip
                 vnf[network_name + "_mac"] = mac
+                vnf[network_name + "_cidr"] = cidr
                 self.logger.debug(network_name + "_ip of " + vnf["vnf_name"] +
                                   " : " + vnf[network_name + "_ip"])
                 self.logger.debug(network_name + "_mac of " + vnf["vnf_name"] +
                                   " : " + vnf[network_name + "_mac"])
+                self.logger.debug(network_name + "_cidr of " + vnf["vnf_name"] +
+                                  " : " + vnf[network_name + "_cidr"])
 
         return vnf_info_list
 
