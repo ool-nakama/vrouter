@@ -126,6 +126,12 @@ REBOOT_WAIT = test_env_config_yaml.get("general").get(
 TOPOLOGY_STABLE_WAIT= test_env_config_yaml.get("general").get(
     "topology_stable_wait")
 
+CFY_MANAGER_MAX_RAM_SIZE = 320000
+TPLGY_MAX_RAM_SIZE = 8196
+TPLGY_REGION_NAME = "RegionOne"
+
+NOVA_CLIENT_API_VERSION = '2'
+
 class vRouter:
     def __init__(self, logger):
 
@@ -597,6 +603,8 @@ class vRouter:
                            "init",
                            "Error : Faild to test execution.")
 
+        self.logger.info("Test scenario yaml validation check : " + res["message"])
+
         end_time_ts = time.time()
         duration = round(end_time_ts - start_time_ts,
                          1)
@@ -622,7 +630,7 @@ class vRouter:
 
         self.logger.info("Collect flavor id for cloudify manager server")
 
-        nova = nvclient.Client("2",
+        nova = nvclient.Client(NOVA_CLIENT_API_VERSION,
                                **self.nv_cresds)
 
         flavor_name = "m1.large"
@@ -634,7 +642,7 @@ class vRouter:
                 flavor_id = os_utils.get_flavor_id_by_ram_range(
                                 nova,
                                 CFY_MANAGER_REQUIERMENTS['ram_min'],
-                                320000)
+                                CFY_MANAGER_MAX_RAM_SIZE)
 
         if flavor_id == '':
             self.logger.error(
@@ -718,8 +726,6 @@ class vRouter:
 
     def init_function_testToplogy(self, tplgy, function_test_config):
         self.logger.info("Collect flavor id for all topology vnf")
-        nova = nvclient.Client("2",
-                               **self.nv_cresds)
 
         vnf_list = function_test_config["vnf_list"]
         target_vnf = self.util.get_vnf_info(vnf_list, "target_vnf")
@@ -743,7 +749,7 @@ class vRouter:
         self.logger.debug("reference_vnf image name : " + reference_vnf_image_name)
         self.logger.debug("reference_vnf flavor name : " + reference_vnf_flavor_name)
 
-        nova = nvclient.Client("2",
+        nova = nvclient.Client(NOVA_CLIENT_API_VERSION,
                                **self.nv_cresds)
 
         # Setting the flavor id for target vnf.
@@ -757,7 +763,7 @@ class vRouter:
                     target_vnf_flavor_id = os_utils.get_flavor_id_by_ram_range(
                         nova,
                         FUNCTION_TEST_TPLGY_DEFAULT['ram_min'],
-                        8196)
+                        TPLGY_MAX_RAM_SIZE)
 
             self.logger.info("target_vnf_flavor_id id search set")
 
@@ -780,7 +786,7 @@ class vRouter:
                         os_utils.get_flavor_id_by_ram_range(
                             nova,
                             FUNCTION_TEST_TPLGY_DEFAULT['ram_min'],
-                            8196)
+                            TPLGY_MAX_RAM_SIZE)
 
             self.logger.info("reference_vnf_flavor_id id search set")
 
@@ -829,7 +835,7 @@ class vRouter:
 
         tplgy.set_reference_vnf_image_id(reference_vnf_image_id)
 
-        tplgy.set_region("RegionOne")
+        tplgy.set_region(TPLGY_REGION_NAME)
 
         ext_net = os_utils.get_external_net(self.neutron)
         if not ext_net:
@@ -871,7 +877,7 @@ class vRouter:
         self.logger.debug("tester vm image name : " + tester_vm_image_name)
         self.logger.debug("tester vm flavor name : " + tester_vm_flavor_name)
 
-        nova = nvclient.Client("2",
+        nova = nvclient.Client(NOVA_CLIENT_API_VERSION,
                                **self.nv_cresds)
 
         # Setting the flavor id for target vnf.
@@ -885,7 +891,7 @@ class vRouter:
                     target_vnf_flavor_id = os_utils.get_flavor_id_by_ram_range(
                         nova,
                         PERFORMANCE_TEST_TPLGY_DEFAULT['ram_min'],
-                        8196)
+                        TPLGY_MAX_RAM_SIZE)
 
         if target_vnf_flavor_id == '':
             return self.step_failure(
@@ -905,7 +911,7 @@ class vRouter:
                     tester_vm_flavor_id = os_utils.get_flavor_id_by_ram_range(
                         nova,
                         PERFORMANCE_TEST_TPLGY_DEFAULT['ram_min'],
-                        8196)
+                        TPLGY_MAX_RAM_SIZE)
 
         if tester_vm_flavor_id == '':
             return self.step_failure(
@@ -954,7 +960,7 @@ class vRouter:
         tplgy.set_send_tester_vm_image_id(tester_vm_image_id)
         tplgy.set_receive_tester_vm_image_id(tester_vm_image_id)
 
-        tplgy.set_region("RegionOne")
+        tplgy.set_region(TPLGY_REGION_NAME)
 
         ext_net = os_utils.get_external_net(self.neutron)
         if not ext_net:

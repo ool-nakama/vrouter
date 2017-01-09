@@ -46,6 +46,18 @@ RESULT_SPRIT_INDEX = {
 
 BIT_PER_BYTE = 8
 
+NOVA_CLIENT_API_VERSION = '2'
+NOVA_CILENT_NETWORK_INFO_INDEX = 0
+CFY_INFO_OUTPUT_FILE = "output.txt"
+
+CIDR_NETWORK_SEGMENT_INFO_INDEX = 0
+PACKET_LOST_INFO_INDEX = 0
+PACKET_TOTAL_INFO_INDEX = 1
+
+NUMBER_OF_DIGITS_FOR_AVG_TRANSFER = 0
+NUMBER_OF_DIGITS_FOR_AVG_BANDWIDTH = 0
+NUMBER_OF_DIGITS_FOR_AVG_JITTER = 3
+NUMBER_OF_DIGITS_FOR_AVG_PKT_LOSS = 1
 
 class utilvnf:
 
@@ -67,7 +79,7 @@ class utilvnf:
 
     def get_nova_credentials(self):
         d = {}
-        d['version'] = '2'
+        d['version'] = NOVA_CLIENT_API_VERSION
         d['username'] = self.username
         d['api_key'] = self.password
         d['auth_url'] = self.auth_url
@@ -84,7 +96,8 @@ class utilvnf:
             if s.name == server_name:
                 break
 
-        address = s.addresses[network_name][0]["addr"]
+        address = \
+            s.addresses[network_name][NOVA_CILENT_NETWORK_INFO_INDEX]["addr"]
 
         return address
 
@@ -97,7 +110,8 @@ class utilvnf:
             if s.name == server_name:
                 break
 
-        mac_address = s.addresses[network_name][0]["OS-EXT-IPS-MAC:mac_addr"]
+        mac_address = \
+            s.addresses[network_name][NOVA_CILENT_NETWORK_INFO_INDEX]["OS-EXT-IPS-MAC:mac_addr"]
 
         return mac_address
 
@@ -137,7 +151,7 @@ class utilvnf:
         if error is not False:
             return None
 
-        f = open("output.txt",
+        f = open(CFY_INFO_OUTPUT_FILE,
                  'r')
         output_data = f.read()
         f.close()
@@ -152,8 +166,7 @@ class utilvnf:
         return manager_address
 
     def get_blueprint_outputs(self, cfy_manager_ip, deployment_name):
-        url = "http://" + cfy_manager_ip + "/deployments/" + \
-              deployment_name + "/outputs"
+        url = "http://%s/deployments/%s/outputs" % (cfy_manager_ip, deployment_name)
 
         response = requests.get(url)
 
@@ -265,7 +278,8 @@ class utilvnf:
                                            network["network_name"])
                 network_name = network["network_name"]
                 subnet_info = network["subnet_info"]
-                cidr = subnet_info["cidr"].split("/")[0]
+                cidr = subnet_info["cidr"] \
+                           .split("/")[CIDR_NETWORK_SEGMENT_INFO_INDEX]
                 vnf[network_name + "_ip"] = ip
                 vnf[network_name + "_mac"] = mac
                 vnf[network_name + "_cidr"] = cidr
@@ -324,9 +338,9 @@ class utilvnf:
             res_data.update({key: re.split(" +", data)[index]})
 
             if key == "los_total":
-                lost = re.split(" +", data)[index].split("/")[0]
+                lost = re.split(" +", data)[index].split("/")[PACKET_LOST_INFO_INDEX]
                 res_data.update({"pkt_lost": lost})
-                total = re.split(" +", data)[index].split("/")[1]
+                total = re.split(" +", data)[index].split("/")[PACKET_TOTAL_INFO_INDEX]
                 res_data.update({"pkt_total": total})
             elif key == "pkt_loss":
                 pkt_loss = re.split(" +", data)[index]
@@ -389,12 +403,16 @@ class utilvnf:
         count = str(input_param["count"])
 
         detect_cnt = str(avg_data["detect_cnt"])
-        avg_transfer = str(int(round(avg_data["avg_transfer"], 0)))
-        avg_bandwidth = str(int(round(avg_data["avg_bandwidth"], 0)))
-        avg_jitter = str(round(avg_data["avg_jitter"], 3))
+        avg_transfer = str(int(round(avg_data["avg_transfer"],
+                                     NUMBER_OF_DIGITS_FOR_AVG_TRANSFER)))
+        avg_bandwidth = str(int(round(avg_data["avg_bandwidth"],
+                                      NUMBER_OF_DIGITS_FOR_AVG_BANDWIDTH)))
+        avg_jitter = str(round(avg_data["avg_jitter"],
+                               NUMBER_OF_DIGITS_FOR_AVG_JITTER))
         pkt_lost = str(int(avg_data["pkt_lost"]))
         pkt_total = str(int(avg_data["pkt_total"]))
-        avg_pkt_loss = str(round(avg_data["avg_pkt_loss"], 1))
+        avg_pkt_loss = str(round(avg_data["avg_pkt_loss"],
+                                 NUMBER_OF_DIGITS_FOR_AVG_PKT_LOSS))
 
         logger.info("====================================" +
                     "====================================")

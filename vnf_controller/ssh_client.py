@@ -43,6 +43,10 @@ SSH_RECEIVE_BUFFER = test_env_config_yaml.get("general").get(
     "ssh_receive_buffer")
 RECEIVE_ROOP_WAIT = 1
 
+DEFAULT_CONNECT_TIMEOUT = 10
+DEFAULT_CONNECT_RETRY_COUNT = 10
+DEFAULT_SEND_TIMEOUT = 10
+
 
 class SSH_Client():
 
@@ -56,7 +60,8 @@ class SSH_Client():
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    def connect(self, time_out=10, retrycount=10):
+    def connect(self, time_out=DEFAULT_CONNECT_TIMEOUT,
+                retrycount=DEFAULT_CONNECT_RETRY_COUNT):
         while retrycount > 0:
             try:
                 logger.info("SSH connect to %s." % self.ip)
@@ -73,7 +78,7 @@ class SSH_Client():
                 self.shell = self.ssh.invoke_shell()
 
                 while not self.shell.recv_ready():
-                    time.sleep(1)
+                    time.sleep(RECEIVE_ROOP_WAIT)
 
                 self.shell.recv(SSH_RECEIVE_BUFFER)
                 break
@@ -91,7 +96,7 @@ class SSH_Client():
         self.connected = True
         return self.connected
 
-    def send(self, cmd, prompt, timeout=10):
+    def send(self, cmd, prompt, timeout=DEFAULT_SEND_TIMEOUT):
         if self.connected is True:
             self.shell.settimeout(timeout)
             logger.debug("Commandset : '%s'", cmd)
