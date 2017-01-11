@@ -120,17 +120,20 @@ PERFORMANCE_TPLGY_DEPLOY_NAME = test_env_config_yaml.get("test_topology").get(
 PERFORMANCE_TEST_TPLGY_DEFAULT = test_env_config_yaml.get("test_topology").get(
     "performance_test_topology").get("default")
 
+TPLGY_STABLE_WAIT= test_env_config_yaml.get("general").get(
+    "topology_stable_wait")
+
 REBOOT_WAIT = test_env_config_yaml.get("general").get(
     "reboot_wait")
 
-TOPOLOGY_STABLE_WAIT= test_env_config_yaml.get("general").get(
-    "topology_stable_wait")
-
 CFY_MANAGER_MAX_RAM_SIZE = 320000
-TPLGY_MAX_RAM_SIZE = 8196
-TPLGY_REGION_NAME = "RegionOne"
+
+VNF_MAX_RAM_SIZE = 8196
+
+REGION_NAME = "RegionOne"
 
 NOVA_CLIENT_API_VERSION = '2'
+
 
 class vRouter:
     def __init__(self, logger):
@@ -373,7 +376,7 @@ class vRouter:
                 if result_data["status"] == "FAIL":
                     return result_data
 
-                time.sleep(TOPOLOGY_STABLE_WAIT)
+                time.sleep(TPLGY_STABLE_WAIT)
 
                 # FUNCTION TEST EXECUTION
                 function_test_list = function_test_scenario["function_test_list"]
@@ -420,7 +423,7 @@ class vRouter:
                 if result_data["status"] == "FAIL":
                     return result_data
 
-                time.sleep(TOPOLOGY_STABLE_WAIT)
+                time.sleep(TPLGY_STABLE_WAIT)
 
                 # PERFORMANCE TEST EXECUTION
                 performance_test_list = performance_test_scenario["performance_test_list"]
@@ -725,6 +728,8 @@ class vRouter:
                                    "", self.results)
 
     def init_function_testToplogy(self, tplgy, function_test_config):
+        tplgy.delete_config()
+
         self.logger.info("Collect flavor id for all topology vnf")
 
         vnf_list = function_test_config["vnf_list"]
@@ -763,7 +768,7 @@ class vRouter:
                     target_vnf_flavor_id = os_utils.get_flavor_id_by_ram_range(
                         nova,
                         FUNCTION_TEST_TPLGY_DEFAULT['ram_min'],
-                        TPLGY_MAX_RAM_SIZE)
+                        VNF_MAX_RAM_SIZE)
 
             self.logger.info("target_vnf_flavor_id id search set")
 
@@ -786,7 +791,7 @@ class vRouter:
                         os_utils.get_flavor_id_by_ram_range(
                             nova,
                             FUNCTION_TEST_TPLGY_DEFAULT['ram_min'],
-                            TPLGY_MAX_RAM_SIZE)
+                            VNF_MAX_RAM_SIZE)
 
             self.logger.info("reference_vnf_flavor_id id search set")
 
@@ -835,7 +840,7 @@ class vRouter:
 
         tplgy.set_reference_vnf_image_id(reference_vnf_image_id)
 
-        tplgy.set_region(TPLGY_REGION_NAME)
+        tplgy.set_region(REGION_NAME)
 
         ext_net = os_utils.get_external_net(self.neutron)
         if not ext_net:
@@ -854,6 +859,7 @@ class vRouter:
                                    "", self.results)
 
     def init_performance_testToplogy(self, tplgy, performance_test_config):
+        tplgy.delete_config()
 
         vnf_list = performance_test_config["vnf_list"]
         target_vnf = self.util.get_vnf_info(vnf_list, "target_vnf")
@@ -891,7 +897,7 @@ class vRouter:
                     target_vnf_flavor_id = os_utils.get_flavor_id_by_ram_range(
                         nova,
                         PERFORMANCE_TEST_TPLGY_DEFAULT['ram_min'],
-                        TPLGY_MAX_RAM_SIZE)
+                        VNF_MAX_RAM_SIZE)
 
         if target_vnf_flavor_id == '':
             return self.step_failure(
@@ -911,7 +917,7 @@ class vRouter:
                     tester_vm_flavor_id = os_utils.get_flavor_id_by_ram_range(
                         nova,
                         PERFORMANCE_TEST_TPLGY_DEFAULT['ram_min'],
-                        TPLGY_MAX_RAM_SIZE)
+                        VNF_MAX_RAM_SIZE)
 
         if tester_vm_flavor_id == '':
             return self.step_failure(
@@ -960,7 +966,7 @@ class vRouter:
         tplgy.set_send_tester_vm_image_id(tester_vm_image_id)
         tplgy.set_receive_tester_vm_image_id(tester_vm_image_id)
 
-        tplgy.set_region(TPLGY_REGION_NAME)
+        tplgy.set_region(REGION_NAME)
 
         ext_net = os_utils.get_external_net(self.neutron)
         if not ext_net:

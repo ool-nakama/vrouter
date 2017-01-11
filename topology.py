@@ -73,6 +73,9 @@ class topology:
         self.config['keystone_url'] = auth_url
         self.config['keystone_tenant_name'] = tenant_name
 
+    def delete_config(self):
+        self.config.clear()
+
     def deploy_vnf(self, blueprint, bp_name='vnftopology',
                    dep_name='vnftest'):
         if self.orchestrator:
