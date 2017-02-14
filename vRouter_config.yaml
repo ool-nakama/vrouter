@@ -1,0 +1,22 @@
+vRouter:
+    general:
+        tenant_name: vRouter
+        tenant_description: vRouter Testing
+        images:
+            centos:
+                image_url: 'http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-1510.qcow2'
+                image_name: centos_7
+        test_data:
+            url: 'https://github.com/oolorg/opnfv-vnf-data.git'
+            branch: 'master'
+    cloudify:
+        blueprint:
+            url: https://github.com/boucherv-orange/cloudify-manager-blueprints.git
+            branch: "3.3.1-build"
+        requierments:
+            ram_min: 8000
+            os_image: centos_7
+        inputs:
+            manager_public_key_name: 'manager-kp'
+            agent_public_key_name: 'agent-kp'
+            ssh_user: centos

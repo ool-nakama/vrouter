@@ -56,6 +56,7 @@ parser.add_argument("-n",
 OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
 TEST_SCENATIO_YAML = "test_scenario.yaml"
 TEST_ENV_CONFIG_YAML = "test_env_config.yaml"
+VROUTER_CONFIG_YAML = "vRouter_config.yaml"
 
 with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
     functest_yaml = yaml.safe_load(f)
@@ -65,20 +66,27 @@ f.close()
 VNF_DIR = functest_yaml.get("general").get("dir").get(
           "repo_vrouter") + "/"
 VNF_DATA_DIR = functest_yaml.get("general").get(
-    "dir").get("dir_vRouter_data") + "/"
+    "dir").get("vrouter_data") + "/"
 DB_URL = functest_yaml.get("results").get("test_db_url")
 
-TENANT_NAME = functest_yaml.get("vRouter").get("general").get("tenant_name")
-TENANT_DESCRIPTION = functest_yaml.get("vRouter").get(
-    "general").get("tenant_description")
-IMAGES = functest_yaml.get("vRouter").get("general").get("images")
-TEST_DATA = functest_yaml.get("vRouter").get("general").get("test_data")
+with open(VROUTER_CONFIG_YAML) as f:
+    vrouter_config_yaml = yaml.safe_load(f)
+f.close()
 
-CFY_MANAGER_BLUEPRINT = functest_yaml.get(
+TENANT_NAME = vrouter_config_yaml.get("vRouter").get(
+    "general").get("tenant_name")
+TENANT_DESCRIPTION = vrouter_config_yaml.get("vRouter").get(
+    "general").get("tenant_description")
+IMAGES = vrouter_config_yaml.get("vRouter").get(
+    "general").get("images")
+TEST_DATA = vrouter_config_yaml.get("vRouter").get(
+    "general").get("test_data")
+
+CFY_MANAGER_BLUEPRINT = vrouter_config_yaml.get(
     "vRouter").get("cloudify").get("blueprint")
-CFY_MANAGER_REQUIERMENTS = functest_yaml.get(
+CFY_MANAGER_REQUIERMENTS = vrouter_config_yaml.get(
     "vRouter").get("cloudify").get("requierments")
-CFY_INPUTS = functest_yaml.get("vRouter").get("cloudify").get("inputs")
+CFY_INPUTS = vrouter_config_yaml.get("vRouter").get("cloudify").get("inputs")
 
 
 TEST_ENV_CONFIG_YAML_FILE_PATH = VNF_DATA_DIR + \
@@ -530,14 +538,13 @@ class vRouter:
 
         self.neutron = os_utils.get_neutron_client(self.ks_cresds)
         nova = os_utils.get_nova_client(self.ks_cresds)
+        self.glance = os_utils.get_glance_client(self.ks_cresds)
 
         self.ks_cresds.update({
             "username": TENANT_NAME,
             "password": TENANT_NAME,
         })
 
-        self.glance = os_utils.get_glance_client(self.ks_cresds)
-        self.logger.info("Upload some OS images if it doesn't exist")
 
         self.logger.debug("Downloading the test data.")
         vRouter_data_path = VNF_DATA_DIR + OPNFV_VNF_DATA_DIR
@@ -549,6 +556,7 @@ class vRouter:
 
         self.load_test_env_config()
 
+        self.logger.info("Upload some OS images if it doesn't exist")
         images = {}
         images.update(IMAGES)
         images.update(self.VNF_TEST_IMAGES)

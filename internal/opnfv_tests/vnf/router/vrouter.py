@@ -24,13 +24,11 @@ class VrouterVnf(testcase_base.TestcaseBase):
         self.result_file = self.get_result_file()
 
     def parse_results(self, ret):
-        exit_code = testcase_base.TestcaseBase.EX_OK
         if ret == 0:
             self.logger.info("{} OK".format(self.case_name))
             self.criteria = 'PASS'
         else:
             self.logger.info("{} FAILED".format(self.case_name))
-            exit_code = testcase_base.TestcaseBase.EX_RUN_ERROR
             self.criteria = "FAIL"
 
     def run(self, **kwargs):
