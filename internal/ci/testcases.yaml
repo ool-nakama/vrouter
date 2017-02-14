@@ -18,13 +18,47 @@ tiers:
                 dependencies:
                     installer: ''
                     scenario: '^((?!lxd).)*$'
+            -
+                name: connection_check
+                criteria: 'status == "PASS"'
+                blocking: true
+                description: >-
+                    This test case verifies the retrieval of OpenStack clients:
+                    Keystone, Glance, Neutron and Nova and may perform some
+                    simple queries. When the config value of
+                    snaps.use_keystone is True, functest must have access to
+                    the cloud's private network.
 
+                dependencies:
+                    installer: '^((?!netvirt).)*$'
+                    scenario: ''
+                run:
+                    module: 'functest.opnfv_tests.openstack.snaps.connection_check'
+                    class: 'ConnectionCheck'
+
+            -
+                name: api_check
+                criteria: 'status == "PASS"'
+                blocking: true
+                description: >-
+                    This test case verifies the retrieval of OpenStack clients:
+                    Keystone, Glance, Neutron and Nova and may perform some
+                    simple queries. When the config value of
+                    snaps.use_keystone is True, functest must have access to
+                    the cloud's private network.
+
+                dependencies:
+                    installer: '^((?!netvirt).)*$'
+                    scenario: ''
+                run:
+                    module: 'functest.opnfv_tests.openstack.snaps.api_check'
+                    class: 'ApiCheck'
     -
         name: smoke
         order: 1
         ci_loop: '(daily)|(weekly)'
         description : >-
-            Set of basic Functional tests to validate the OpenStack deployment.
+            Set of basic Functional tests to validate the OPNFV scenarios.
         testcases:
             -
                 name: vping_ssh
@@ -37,6 +71,9 @@ tiers:
                 dependencies:
                     installer: ''
                     scenario: '^((?!bgpvpn|odl_l3).)*$'
+                run:
+                    module: 'functest.opnfv_tests.openstack.vping.vping_ssh'
+                    class: 'VPingSSH'
 
             -
                 name: vping_userdata
@@ -48,6 +85,9 @@ tiers:
                 dependencies:
                     installer: ''
                     scenario: '^((?!lxd).)*$'
+                run:
+                    module: 'functest.opnfv_tests.openstack.vping.vping_userdata'
+                    class: 'VPingUserdata'
 
             -
                 name: tempest_smoke_serial
@@ -59,8 +99,11 @@ tiers:
                     Tempest automatically and depends on the parameters of
                     the OpenStack deplopyment.
                 dependencies:
-                    installer: ''
+                    installer: '^((?!netvirt).)*$'
                     scenario: ''
+                run:
+                    module: 'functest.opnfv_tests.openstack.tempest.tempest'
+                    class: 'TempestSmokeSerial'
 
             -
                 name: rally_sanity
@@ -72,15 +115,10 @@ tiers:
                 dependencies:
                     installer: ''
                     scenario: '^((?!bgpvpn).)*$'
+                run:
+                    module: 'functest.opnfv_tests.openstack.rally.rally'
+                    class: 'RallySanity'
 
-    -
-        name: sdn_suites
-        order: 2
-        ci_loop: '(daily)|(weekly)'
-        description : >-
-            Test suites corresponding to the different
-            SDN Controllers existing in OPNFV.
-        testcases:
             -
                 name: odl
                 criteria: 'success_rate == 100%'
@@ -93,8 +131,12 @@ tiers:
                     installer: ''
                     scenario: 'odl'
                 run:
-                    module: 'functest.opnfv_tests.Controllers.ODL.OpenDaylightTesting'
-                    class: 'ODLTestCases'
+                    module: 'functest.opnfv_tests.sdn.odl.odl'
+                    class: 'ODLTests'
+                    args:
+                        suites:
+                            -  /home/opnfv/repos/odl_test/csit/suites/integration/basic
+                            -  /home/opnfv/repos/odl_test/csit/suites/openstack/neutron
 
             -
                 name: onos
@@ -108,9 +150,30 @@ tiers:
                     installer: ''
                     scenario: 'onos'
 
+
+            -
+                name: snaps_smoke
+                criteria: 'status == "PASS"'
+                blocking: false
+                description: >-
+                    This test case contains tests that setup and destroy
+                    environments with VMs with and without Floating IPs
+                    with a newly created user and project. Set the config
+                    value snaps.use_floating_ips (True|False) to toggle
+                    this functionality. When the config value of
+                    snaps.use_keystone is True, functest must have access to
+                    the cloud's private network.
+
+                dependencies:
+                    installer: '^((?!netvirt).)*$'
+                    scenario: ''
+                run:
+                    module: 'functest.opnfv_tests.openstack.snaps.smoke'
+                    class: 'SnapsSmoke'
+
     -
         name: features
-        order: 3
+        order: 2
         ci_loop: '(daily)|(weekly)'
         description : >-
             Test suites from feature projects
@@ -125,6 +188,9 @@ tiers:
                 dependencies:
                     installer: '(fuel)|(joid)'
                     scenario: ''
+                run:
+                     module: 'functest.opnfv_tests.features.promise'
+                     class: 'Promise'
 
             -
                 name: doctor
@@ -133,8 +199,11 @@ tiers:
                 description: >-
                     Test suite from Doctor project.
                 dependencies:
-                    installer: 'apex'
+                    installer: '(apex)|(fuel)|(joid)'
                     scenario: '^((?!fdio).)*$'
+                run:
+                    module: 'functest.opnfv_tests.features.doctor'
+                    class: 'Doctor'
 
             -
                 name: bgpvpn
@@ -143,8 +212,11 @@ tiers:
                 description: >-
                     Test suite from SDNVPN project.
                 dependencies:
-                    installer: '(fuel)|(apex)'
+                    installer: '(fuel)|(apex)|(netvirt)'
                     scenario: 'bgpvpn'
+                run:
+                    module: 'functest.opnfv_tests.features.sdnvpn'
+                    class: 'SdnVpnTests'
 
             -
                 name: security_scan
@@ -155,25 +227,18 @@ tiers:
                 dependencies:
                     installer: 'apex'
                     scenario: '^((?!fdio).)*$'
-
-            -
-                name: copper
-                criteria: 'status == "PASS"'
-                blocking: false
-                description: >-
-                    Test suite for policy management based on OpenStack Congress
-                dependencies:
-                    installer: '(apex)|(joid)'
-                    scenario: '^((?!fdio|lxd).)*$'
-            -
-                name: moon
-                criteria: 'status == "PASS"'
-                blocking: false
-                description: >-
-                    Security management system for OPNFV
-                dependencies:
-                    installer: 'compass'
-                    scenario: '(odl)*(moon)'
+#            -
+#                name: copper
+#                criteria: 'status == "PASS"'
+#                blocking: false
+#                description: >-
+#                    Test suite for policy management based on OpenStack Congress
+#                dependencies:
+#                    installer: '(apex)|(joid)'
+#                    scenario: '^((?!fdio|lxd).)*$'
+#                run:
+#                    module: 'functest.opnfv_tests.features.copper'
+#                    class: 'Copper'
             -
                 name: multisite
                 criteria: 'success_rate == 100%'
@@ -183,15 +248,9 @@ tiers:
                 dependencies:
                     installer: '(fuel)|(compass)'
                     scenario: 'multisite'
-            -
-                name: domino
-                criteria: 'status == "PASS"'
-                blocking: false
-                description: >-
-                    Test suite for template distribution based on Domino
-                dependencies:
-                    installer: 'joid'
-                    scenario: ''
+                run:
+                    module: 'functest.opnfv_tests.openstack.tempest.tempest'
+                    class: 'TempestMultisite'
             -
                 name: odl-sfc
                 criteria: 'status == "PASS"'
@@ -201,6 +260,9 @@ tiers:
                 dependencies:
                     installer: '(apex)|(fuel)'
                     scenario: 'odl_l2-sfc'
+                run:
+                    module: 'functest.opnfv_tests.features.odl_sfc'
+                    class: 'OpenDaylightSFC'
             -
                 name: onos_sfc
                 criteria: 'status == "PASS"'
@@ -219,10 +281,24 @@ tiers:
                 dependencies:
                     installer: 'fuel'
                     scenario: '^((?!bgpvpn|noha).)*$'
-
+                run:
+                    module: 'functest.opnfv_tests.vnf.rnc.parser'
+                    class: 'Parser'
+            -
+                name: orchestra
+                criteria: 'ret == 0'
+                blocking: false
+                description: >-
+                    Test OpenBaton (Orchestra) stack
+                dependencies:
+                    installer: 'joid'
+                    scenario: 'unknown'
+                run:
+                    module: 'functest.opnfv_tests.features.orchestrator.orchestra'
+                    class: 'OpenbatonOrchestrator'
     -
-        name: openstack
-        order: 4
+        name: components
+        order: 3
         ci_loop: 'weekly'
         description : >-
             Extensive testing of OpenStack API.
@@ -236,8 +312,11 @@ tiers:
                     Tempest automatically and depends on the parameters of
                     the OpenStack deplopyment.
                 dependencies:
-                    installer: ''
+                    installer: '^((?!netvirt).)*$'
                     scenario: ''
+                run:
+                    module: 'functest.opnfv_tests.openstack.tempest.tempest'
+                    class: 'TempestFullParallel'
 
             -
                 name: rally_full
@@ -247,18 +326,21 @@ tiers:
                     This test case runs the full suite of scenarios of the OpenStack
                     Rally suite using several threads and iterations.
                 dependencies:
-                    installer: ''
+                    installer: '^((?!netvirt).)*$'
                     scenario: ''
+                run:
+                    module: 'functest.opnfv_tests.openstack.rally.rally'
+                    class: 'RallyFull'
 
     -
         name: vnf
-        order: 5
+        order: 4
         ci_loop: 'weekly'
         description : >-
             Collection of VNF test cases.
         testcases:
             -
-                name: vims
+                name: cloudify_ims
                 criteria: 'status == "PASS"'
                 blocking: false
                 description: >-
@@ -267,15 +349,71 @@ tiers:
                 dependencies:
                     installer: ''
                     scenario: '(ocl)|(nosdn)|^(os-odl)((?!bgpvpn).)*$'
+                run:
+                    module: 'functest.opnfv_tests.vnf.ims.cloudify_ims'
+                    class: 'ImsVnf'
+            -
+                name: aaa
+                criteria: 'ret == 0'
+                blocking: false
+                description: >-
+                    Test suite from Parser project.
+                dependencies:
+                    installer: ''
+                    scenario: ''
+                run:
+                    module: 'functest.opnfv_tests.vnf.aaa.aaa'
+                    class: 'AaaVnf'
 
+            -
+                name: juju_epc
+                criteria: 'ret == 0'
+                blocking: false
+                description: >-
+                    Test suite from OAI project, vEPC deployed with Juju.
+                dependencies:
+                    installer: 'unknown'
+                    scenario: 'unknown'
+                run:
+                    module: 'functest.opnfv_tests.vnf.epc.epc'
+                    class: 'EpcVnf'
+
+            -
+                name: orchestra_ims
+                criteria: 'ret == 0'
+                blocking: false
+                description: >-
+                    VNF deployment with OpenBaton (Orchestra)
+                dependencies:
+                    installer: 'unknown'
+                    scenario: 'unknown'
+                run:
+                    module: 'functest.opnfv_tests.vnf.ims.orchestra_ims'
+                    class: 'ImsVnf'
+
+            -
+                name: opera_ims
+                criteria: 'ret == 0'
+                blocking: false
+                description: >-
+                    Evolution of vIMS
+                dependencies:
+                    installer: 'unknown'
+                    scenario: 'unknown'
+                run:
+                    module: 'functest.opnfv_tests.vnf.ims.opera_ims'
+                    class: 'ImsVnf'
+
+            -
                 name: vrouter
                 criteria: 'status == "PASS"'
                 blocking: false
                 description: >-
                     This test case is vRouter testing.
                 dependencies:
-                    installer: ''
+                    installer: 'fuel'
                     scenario: ''
                 run:
-                    module: 'functest.opnfv_tests.vnf.vRouter.vRouterTesting'
-                    class: 'vRouterTestCases'
+                    module: 'functest.opnfv_tests.vnf.router.vrouter'
+                    class: 'VrouterVnf'
+

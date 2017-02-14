@@ -24,17 +24,9 @@ with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
 f.close()
 
 VNF_DATA_DIR = functest_yaml.get("general").get(
-    "directories").get("dir_vRouter_data") + "/"
+    "dir").get("dir_vRouter_data") + "/"
 
-TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
-                       OPNFV_VNF_DATA_DIR + \
-                       TEST_ENV_CONFIG_YAML_FILE
-with open(TEST_ENV_CONFIG_YAML) as f:
-    test_env_config_yaml = yaml.safe_load(f)
-f.close()
 
-IMAGE = test_env_config_yaml.get("general").get("images").get("vyos")
-TESTER_IMAGE = test_env_config_yaml.get("general").get("images").get("tester_vm_os")
 
 RESULT_SPRIT_INDEX = {
     "transfer": 8,
@@ -68,6 +60,15 @@ class utilvnf:
         self.auth_url = ""
         self.tenant_name = ""
         self.region_name = ""
+        TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
+                               OPNFV_VNF_DATA_DIR + \
+                               TEST_ENV_CONFIG_YAML_FILE
+        with open(TEST_ENV_CONFIG_YAML) as f:
+            test_env_config_yaml = yaml.safe_load(f)
+        f.close()
+
+        self.IMAGE = test_env_config_yaml.get("general").get("images").get("vyos")
+        self.TESTER_IMAGE = test_env_config_yaml.get("general").get("images").get("tester_vm_os")
 
     def set_credentials(self, username, password, auth_url,
                         tenant_name, region_name):
@@ -201,9 +202,9 @@ class utilvnf:
                                                         topology_deploy_name)
         for vnf in vnf_info_list:
             vnf_name = vnf["vnf_name"]
-            vnf["os_type"] = IMAGE["os_type"]
-            vnf["user"] = IMAGE["user"]
-            vnf["pass"] = IMAGE["pass"]
+            vnf["os_type"] = self.IMAGE["os_type"]
+            vnf["user"] = self.IMAGE["user"]
+            vnf["pass"] = self.IMAGE["pass"]
 
             if vnf_name == target_vnf_name:
                 vnf["target_vnf_flag"] = True
@@ -247,16 +248,16 @@ class utilvnf:
                                       "target_vnf")
                 vnf["target_vnf_flag"] = True
                 vnf["os_type"] = target_vnf["os_type"]
-                vnf["user"] = IMAGE["user"]
-                vnf["pass"] = IMAGE["pass"]
+                vnf["user"] = self.IMAGE["user"]
+                vnf["pass"] = self.IMAGE["pass"]
             else:
                 tester_vm = self.get_vnf_info(
                                       performance_test_config["vnf_list"],
                                       "tester_vm")
                 vnf["target_vnf_flag"] = False
                 vnf["os_type"] = tester_vm["os_type"]
-                vnf["user"] = TESTER_IMAGE["user"]
-                vnf["key_path"] = TESTER_IMAGE["key_path"]
+                vnf["user"] = self.TESTER_IMAGE["user"]
+                vnf["key_path"] = self.TESTER_IMAGE["key_path"]
 
             self.logger.debug("vnf name : " + vnf_name)
             self.logger.debug(vnf_name + " floating ip address : " +
@@ -560,3 +561,4 @@ class utilvnf:
         res["message"] = "success"
 
         return res
+

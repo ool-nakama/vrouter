@@ -2,7 +2,7 @@
 # coding: utf8
 #######################################################################
 #
-# Copyright (c) 2016 Okinawa Open Laboratory
+# Copyright (c) 2017 Okinawa Open Laboratory
 #
 # All rights reserved. This program and the accompanying materials
 # are made available under the terms of the Apache License, Version 2.0
@@ -29,17 +29,11 @@ with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
 f.close()
 
 VNF_DATA_DIR = functest_yaml.get("general").get(
-    "directories").get("dir_vRouter_data") + "/"
+    "dir").get("dir_vRouter_data") + "/"
 
 TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
                        OPNFV_VNF_DATA_DIR + \
                        TEST_ENV_CONFIG_YAML_FILE
-with open(TEST_ENV_CONFIG_YAML) as f:
-    test_env_config_yaml = yaml.safe_load(f)
-f.close()
-
-PROTOCOL_STABLE_WAIT = test_env_config_yaml.get("general").get(
-    "protocol_stable_wait")
 
 
 class Performance_test_exec():

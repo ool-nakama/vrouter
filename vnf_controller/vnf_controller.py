@@ -25,7 +25,7 @@ logger = ft_logger.Logger("vRouter.vnf_controller").getLogger()
 OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
 TEST_ENV_CONFIG_YAML_FILE = "test_env_config.yaml"
 
-REPO_PATH = os.environ['repos_dir'] + '/functest/'
+REPO_PATH = os.environ['REPOS_DIR'] + '/functest/'
 if not os.path.exists(REPO_PATH):
     logger.error("Functest repository directory not found '%s'" % REPO_PATH)
     exit(-1)
@@ -35,27 +35,27 @@ with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
 f.close()
 
 VNF_DATA_DIR = functest_yaml.get("general").get(
-    "directories").get("dir_vRouter_data") + "/"
+    "dir").get("dir_vRouter_data") + "/"
 
 TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
                        OPNFV_VNF_DATA_DIR + \
                        TEST_ENV_CONFIG_YAML_FILE
-with open(TEST_ENV_CONFIG_YAML) as f:
-    test_env_config_yaml = yaml.safe_load(f)
-f.close()
-
-REBOOT_WAIT = test_env_config_yaml.get("general").get("reboot_wait")
-COMMAND_WAIT = test_env_config_yaml.get("general").get("command_wait")
-SSH_CONNECT_TIMEOUT = test_env_config_yaml.get("general").get(
-    "ssh_connect_timeout")
-SSH_CONNECT_RETRY_COUNT = test_env_config_yaml.get("general").get(
-    "ssh_connect_retry_count")
 
 class VNF_controller():
 
     def __init__(self, util_info):
         logger.debug("init vnf controller")
         self.vm_controller = vm_controller(util_info)
+
+        with open(TEST_ENV_CONFIG_YAML) as f:
+            test_env_config_yaml = yaml.safe_load(f)
+        f.close()
+
+        self.cmd_wait = test_env_config_yaml.get("general").get("command_wait")
+        self.ssh_connect_timeout = test_env_config_yaml.get("general").get(
+            "ssh_connect_timeout")
+        self.ssh_connect_retry_count = test_env_config_yaml.get("general").get(
+            "ssh_connect_retry_count")
 
     def config_vnf(self, source_vnf, destination_vnf, test_cmd_file_path,
                    parameter_file_path, prompt_file_path):
@@ -96,8 +96,8 @@ class VNF_controller():
                          target_vnf["user"],
                          target_vnf["pass"])
 
-        result = ssh.connect(SSH_CONNECT_TIMEOUT,
-                             SSH_CONNECT_RETRY_COUNT)
+        result = ssh.connect(self.ssh_connect_timeout,
+                             self.ssh_connect_retry_count)
         if not result:
             return False
 
@@ -121,7 +121,7 @@ class VNF_controller():
                 break
             checker.regexp_information(res_data,
                                        check_rules)
-            time.sleep(COMMAND_WAIT)
+            time.sleep(self.cmd_wait)
 
         ssh.close()
 
@@ -132,3 +132,4 @@ class VNF_controller():
     def output_chcke_result_detail_data(self, res_data_list):
         for res_data in res_data_list:
             logger.debug(res_data)
+

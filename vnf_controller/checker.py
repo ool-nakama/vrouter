@@ -2,7 +2,7 @@
 # coding: utf8
 #######################################################################
 #
-# Copyright (c) 2016 Okinawa Open Laboratory
+# Copyright (c) 2017 Okinawa Open Laboratory
 #
 # All rights reserved. This program and the accompanying materials
 # are made available under the terms of the Apache License, Version 2.0

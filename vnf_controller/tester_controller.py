@@ -25,7 +25,7 @@ logger = ft_logger.Logger("tester_ctrl").getLogger()
 OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
 TEST_ENV_CONFIG_YAML_FILE = "test_env_config.yaml"
 
-REPO_PATH = os.environ['repos_dir'] + '/functest/'
+REPO_PATH = os.environ['REPOS_DIR'] + '/functest/'
 if not os.path.exists(REPO_PATH):
     logger.error("Functest repository directory not found '%s'" % REPO_PATH)
     exit(-1)
@@ -35,21 +35,11 @@ with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
 f.close()
 
 VNF_DATA_DIR = functest_yaml.get("general").get(
-    "directories").get("dir_vRouter_data") + "/"
+    "dir").get("dir_vRouter_data") + "/"
 
 TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
                        OPNFV_VNF_DATA_DIR + \
                        TEST_ENV_CONFIG_YAML_FILE
-with open(TEST_ENV_CONFIG_YAML) as f:
-    test_env_config_yaml = yaml.safe_load(f)
-f.close()
-
-REBOOT_WAIT = test_env_config_yaml.get("general").get("reboot_wait")
-COMMAND_WAIT = test_env_config_yaml.get("general").get("command_wait")
-SSH_CONNECT_TIMEOUT = test_env_config_yaml.get("general").get(
-    "ssh_connect_timeout")
-SSH_CONNECT_RETRY_COUNT = test_env_config_yaml.get("general").get(
-    "ssh_connect_retry_count")
 
 class tester_controller():
 
@@ -65,6 +55,12 @@ class tester_controller():
                                   self.credentials["auth_url"],
                                   self.credentials["tenant_name"],
                                   self.credentials["region_name"])
+
+        with open(TEST_ENV_CONFIG_YAML) as f:
+            test_env_config_yaml = yaml.safe_load(f)
+        f.close()
+
+        self.cmd_wait = test_env_config_yaml.get("general").get("command_wait")
 
     def config_send_tester(self, source_tester, destination_tester, target_vnf,
                            pre_cmd_file_path, test_cmd_file_path,
@@ -149,7 +145,7 @@ class tester_controller():
             res_data_list.extend(res_split_data)
             if not res:
                 break
-            time.sleep(COMMAND_WAIT)
+            time.sleep(self.cmd_wait)
 
         input_parameter["client_ip"] = \
             destination_tester["send_data_plane_network_ip"]

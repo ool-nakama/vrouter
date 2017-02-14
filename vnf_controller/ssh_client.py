@@ -2,7 +2,7 @@
 # coding: utf8
 #######################################################################
 #
-# Copyright (c) 2016 Okinawa Open Laboratory
+# Copyright (c) 2017 Okinawa Open Laboratory
 #
 # All rights reserved. This program and the accompanying materials
 # are made available under the terms of the Apache License, Version 2.0
@@ -30,17 +30,11 @@ with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
 f.close()
 
 VNF_DATA_DIR = functest_yaml.get("general").get(
-    "directories").get("dir_vRouter_data") + "/"
+    "dir").get("dir_vRouter_data") + "/"
 
 TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
                        OPNFV_VNF_DATA_DIR + \
                        TEST_ENV_CONFIG_YAML_FILE
-with open(TEST_ENV_CONFIG_YAML) as f:
-    test_env_config_yaml = yaml.safe_load(f)
-f.close()
-
-SSH_RECEIVE_BUFFER = test_env_config_yaml.get("general").get(
-    "ssh_receive_buffer")
 RECEIVE_ROOP_WAIT = 1
 
 DEFAULT_CONNECT_TIMEOUT = 10
@@ -59,6 +53,14 @@ class SSH_Client():
 
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        with open(TEST_ENV_CONFIG_YAML) as f:
+            test_env_config_yaml = yaml.safe_load(f)
+        f.close()
+
+        self.ssh_revieve_buff = test_env_config_yaml.get("general").get(
+            "ssh_receive_buffer")
+
 
     def connect(self, time_out=DEFAULT_CONNECT_TIMEOUT,
                 retrycount=DEFAULT_CONNECT_RETRY_COUNT):
@@ -80,7 +82,7 @@ class SSH_Client():
                 while not self.shell.recv_ready():
                     time.sleep(RECEIVE_ROOP_WAIT)
 
-                self.shell.recv(SSH_RECEIVE_BUFFER)
+                self.shell.recv(self.ssh_revieve_buff)
                 break
             except:
                 logger.info("SSH timeout for %s..." % self.ip)
@@ -111,7 +113,7 @@ class SSH_Client():
             while not res_buff.endswith(prompt):
                 time.sleep(RECEIVE_ROOP_WAIT)
                 try:
-                    res = self.shell.recv(SSH_RECEIVE_BUFFER)
+                    res = self.shell.recv(self.ssh_revieve_buff)
                 except:
                     logger.error("ssh receive timeout : Command : '%s'", cmd)
                     break
@@ -137,3 +139,4 @@ class SSH_Client():
                 return False
 
         return True
+

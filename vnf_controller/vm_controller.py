@@ -24,7 +24,7 @@ logger = ft_logger.Logger("vRouter.vm_controller").getLogger()
 OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
 TEST_ENV_CONFIG_YAML_FILE = "test_env_config.yaml"
 
-REPO_PATH = os.environ['repos_dir'] + '/functest/'
+REPO_PATH = os.environ['REPOS_DIR'] + '/functest/'
 if not os.path.exists(REPO_PATH):
     logger.error("Functest repository directory not found '%s'" % REPO_PATH)
     exit(-1)
@@ -34,22 +34,12 @@ with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
 f.close()
 
 VNF_DATA_DIR = functest_yaml.get("general").get(
-    "directories").get("dir_vRouter_data") + "/"
+    "dir").get("dir_vRouter_data") + "/"
 
 
 TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
                        OPNFV_VNF_DATA_DIR + \
                        TEST_ENV_CONFIG_YAML_FILE
-with open(TEST_ENV_CONFIG_YAML) as f:
-    test_env_config_yaml = yaml.safe_load(f)
-f.close()
-
-REBOOT_WAIT = test_env_config_yaml.get("general").get("reboot_wait")
-COMMAND_WAIT = test_env_config_yaml.get("general").get("command_wait")
-SSH_CONNECT_TIMEOUT = test_env_config_yaml.get("general").get(
-    "ssh_connect_timeout")
-SSH_CONNECT_RETRY_COUNT = test_env_config_yaml.get("general").get(
-    "ssh_connect_retry_count")
 
 
 class vm_controller():
@@ -65,6 +55,17 @@ class vm_controller():
                                   self.credentials["auth_url"],
                                   self.credentials["tenant_name"],
                                   self.credentials["region_name"])
+
+        with open(TEST_ENV_CONFIG_YAML) as f:
+            test_env_config_yaml = yaml.safe_load(f)
+        f.close()
+
+        self.reboot_wait = test_env_config_yaml.get("general").get("reboot_wait")
+        self.command_wait = test_env_config_yaml.get("general").get("command_wait")
+        self.ssh_connect_timeout = test_env_config_yaml.get("general").get(
+            "ssh_connect_timeout")
+        self.ssh_connect_retry_count = test_env_config_yaml.get("general").get(
+            "ssh_connect_retry_count")
 
     def command_gen_from_template(self, command_file_path, cmd_input_param):
         (command_file_dir, command_file_name) = os.path.split(
@@ -99,14 +100,14 @@ class vm_controller():
                          password=vm_info["pass"],
                          key_filename=key_filename)
 
-        result = ssh.connect(SSH_CONNECT_TIMEOUT,
-                             SSH_CONNECT_RETRY_COUNT)
+        result = ssh.connect(self.ssh_connect_timeout,
+                             self.ssh_connect_retry_count)
         if not result:
             logger.debug("try to vm reboot.")
             self.util.reboot_vm(vm_info["vnf_name"])
-            time.sleep(REBOOT_WAIT)
-            result = ssh.connect(SSH_CONNECT_TIMEOUT,
-                                 SSH_CONNECT_RETRY_COUNT)
+            time.sleep(self.reboot_wait)
+            result = ssh.connect(self.ssh_connect_timeout,
+                                 self.ssh_connect_retry_count)
             if not result:
                 return None
 
@@ -147,7 +148,7 @@ class vm_controller():
             if not res:
                 return res, res_data_list
 
-            time.sleep(COMMAND_WAIT)
+            time.sleep(self.command_wait)
 
         return True, res_data_list
 
