@@ -13,20 +13,18 @@ import os
 import re
 import requests
 import yaml
+from git import Repo
 
 from novaclient import client as novaclient
 
-OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
-TEST_ENV_CONFIG_YAML_FILE = "test_env_config.yaml"
+VROUTER_CONFIG_YAML = "vRouter_config.yaml"
 
-with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
-    functest_yaml = yaml.safe_load(f)
+with open(VROUTER_CONFIG_YAML) as f:
+    vrouter_config_yaml = yaml.safe_load(f)
 f.close()
 
-VNF_DATA_DIR = functest_yaml.get("general").get(
-    "dir").get("vrouter_data") + "/"
-
-
+TEST_DATA = vrouter_config_yaml.get("vRouter").get(
+    "general").get("test_data")
 
 RESULT_SPRIT_INDEX = {
     "transfer": 8,
@@ -60,12 +58,43 @@ class utilvnf:
         self.auth_url = ""
         self.tenant_name = ""
         self.region_name = ""
-        TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
-                               OPNFV_VNF_DATA_DIR + \
-                               TEST_ENV_CONFIG_YAML_FILE
-        with open(TEST_ENV_CONFIG_YAML) as f:
+
+        with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
+            functest_yaml = yaml.safe_load(f)
+        f.close()
+
+        self.VNF_DIR = functest_yaml.get("general").get("dir").get(
+            "repo_vrouter") + "/"
+
+        self.VNF_DATA_DIR_NAME = "data/"
+        self.VNF_DATA_DIR = self.VNF_DIR + self.VNF_DATA_DIR_NAME
+        self.OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
+        self.COMMAND_TEMPLATE_DIR = "command_template/"
+        self.TEST_SCENATIO_YAML = "test_scenario.yaml"
+        self.TEST_ENV_CONFIG_YAML_FILE = "test_env_config.yaml"
+        self.TEST_CMD_MAP_YAML_FILE = "test_cmd_map.yaml"
+        self.TEST_ENV_CONFIG_YAML = self.VNF_DATA_DIR + \
+                                    self.OPNFV_VNF_DATA_DIR + \
+                                    self.TEST_ENV_CONFIG_YAML_FILE
+
+        if not os.path.exists(self.VNF_DATA_DIR):
+            os.makedirs(self.VNF_DATA_DIR) 
+
+        self.logger.debug("Downloading the test data.")
+        vRouter_data_path = self.VNF_DATA_DIR + self.OPNFV_VNF_DATA_DIR
+
+        if not os.path.exists(vRouter_data_path):
+            Repo.clone_from(TEST_DATA['url'],
+                            vRouter_data_path,
+                            branch=TEST_DATA['branch'])
+
+        with open(self.TEST_ENV_CONFIG_YAML) as f:
             test_env_config_yaml = yaml.safe_load(f)
         f.close()
+
+        self.TEST_SCENATIO_YAML_FILE = self.VNF_DATA_DIR + \
+                                       self.OPNFV_VNF_DATA_DIR + \
+                                       self.TEST_SCENATIO_YAML
 
         self.IMAGE = test_env_config_yaml.get("general").get("images").get("vyos")
         self.TESTER_IMAGE = test_env_config_yaml.get("general").get("images").get("tester_vm_os")
@@ -561,4 +590,3 @@ class utilvnf:
         res["message"] = "success"
 
         return res
-
