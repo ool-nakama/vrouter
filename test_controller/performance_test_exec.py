@@ -19,39 +19,23 @@ from vrouter.vnf_controller.tester_controller import tester_controller
 """ logging configuration """
 logger = ft_logger.Logger("vRouter.performance_test_exec").getLogger()
 
-OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
-COMMAND_TEMPLATE_DIR = "command_template/"
-TEST_ENV_CONFIG_YAML_FILE = "test_env_config.yaml"
-TEST_CMD_MAP_YAML_FILE = "test_cmd_map.yaml"
-
-with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
-    functest_yaml = yaml.safe_load(f)
-f.close()
-
-VNF_DATA_DIR = functest_yaml.get("general").get(
-    "dir").get("vrouter_data") + "/"
-
-TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
-                       OPNFV_VNF_DATA_DIR + \
-                       TEST_ENV_CONFIG_YAML_FILE
-
 
 class Performance_test_exec():
 
     def __init__(self, util_info):
         logger.debug("init performance test exec")
+        self.util = utilvnf(logger)
         self.credentials = util_info["credentials"]
         self.tester_ctrl = tester_controller(util_info)
 
-        test_cmd_map_file = open(VNF_DATA_DIR +
-                                 OPNFV_VNF_DATA_DIR +
-                                 COMMAND_TEMPLATE_DIR +
-                                 TEST_CMD_MAP_YAML_FILE,
+        test_cmd_map_file = open(self.util.VNF_DATA_DIR +
+                                 self.util.OPNFV_VNF_DATA_DIR +
+                                 self.util.COMMAND_TEMPLATE_DIR +
+                                 self.util.TEST_CMD_MAP_YAML_FILE,
                                  'r')
         self.test_cmd_map_yaml = yaml.safe_load(test_cmd_map_file)
         test_cmd_map_file.close()
 
-        self.util = utilvnf(logger)
         self.util.set_credentials(self.credentials["username"],
                                   self.credentials["password"],
                                   self.credentials["auth_url"],

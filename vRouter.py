@@ -53,9 +53,6 @@ parser.add_argument("-n",
                     help="Don't clean the created resources for this test.",
                     action="store_true")
 
-OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
-TEST_SCENATIO_YAML = "test_scenario.yaml"
-TEST_ENV_CONFIG_YAML = "test_env_config.yaml"
 VROUTER_CONFIG_YAML = "vRouter_config.yaml"
 
 with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
@@ -65,8 +62,6 @@ f.close()
 # Cloudify parameters
 VNF_DIR = functest_yaml.get("general").get("dir").get(
           "repo_vrouter") + "/"
-VNF_DATA_DIR = functest_yaml.get("general").get(
-    "dir").get("vrouter_data") + "/"
 DB_URL = functest_yaml.get("results").get("test_db_url")
 
 with open(VROUTER_CONFIG_YAML) as f:
@@ -87,15 +82,6 @@ CFY_MANAGER_BLUEPRINT = vrouter_config_yaml.get(
 CFY_MANAGER_REQUIERMENTS = vrouter_config_yaml.get(
     "vRouter").get("cloudify").get("requierments")
 CFY_INPUTS = vrouter_config_yaml.get("vRouter").get("cloudify").get("inputs")
-
-
-TEST_ENV_CONFIG_YAML_FILE_PATH = VNF_DATA_DIR + \
-                                 OPNFV_VNF_DATA_DIR + \
-                                 TEST_ENV_CONFIG_YAML
-
-TEST_SCENATIO_YAML_FILE_PATH = VNF_DATA_DIR + \
-                               OPNFV_VNF_DATA_DIR + \
-                               TEST_SCENATIO_YAML
 
 
 CFY_MANAGER_MAX_RAM_SIZE = 320000
@@ -149,7 +135,7 @@ class vRouter:
 
     def load_test_env_config(self):
 
-        with open(TEST_ENV_CONFIG_YAML_FILE_PATH) as f:
+        with open(self.util.TEST_ENV_CONFIG_YAML) as f:
             test_env_config_yaml = yaml.safe_load(f)
         f.close()
 
@@ -193,7 +179,7 @@ class vRouter:
 
 
     def download_and_add_image_on_glance(self, glance, image_name, image_url):
-        dest_path = VNF_DATA_DIR + "tmp/"
+        dest_path = self.util.VNF_DATA_DIR + "tmp/"
         if not os.path.exists(dest_path):
             os.makedirs(dest_path)
         file_name = image_url.rsplit('/')[-1]
@@ -246,10 +232,10 @@ class vRouter:
     def init_vRouter_test(self, cfy):
         self.util_info = {"credentials": self.credentials,
                           "cfy": cfy,
-                          "vnf_data_dir": VNF_DATA_DIR}
+                          "vnf_data_dir": self.util.VNF_DATA_DIR}
 
         self.cfy_manager_ip = self.util.get_cfy_manager_address(cfy,
-                                                                VNF_DATA_DIR)
+                                                                self.util.VNF_DATA_DIR)
 
         self.logger.debug("cfy manager address : %s" % self.cfy_manager_ip)
 
@@ -476,8 +462,7 @@ class vRouter:
 
         start_time_ts = time.time()
 
-        if not os.path.exists(VNF_DATA_DIR):
-            os.makedirs(VNF_DATA_DIR)
+        self.util = utilvnf(self.logger)
 
         self.ks_cresds = os_utils.get_credentials()
 
@@ -546,14 +531,6 @@ class vRouter:
         })
 
 
-        self.logger.debug("Downloading the test data.")
-        vRouter_data_path = VNF_DATA_DIR + OPNFV_VNF_DATA_DIR
-
-        if not os.path.exists(vRouter_data_path):
-            Repo.clone_from(TEST_DATA['url'],
-                            vRouter_data_path,
-                            branch=TEST_DATA['branch'])
-
         self.load_test_env_config()
 
         self.logger.info("Upload some OS images if it doesn't exist")
@@ -600,7 +577,6 @@ class vRouter:
                             "tenant_name": TENANT_NAME,
                             "region_name": os.environ['OS_REGION_NAME']}
 
-        self.util = utilvnf(self.logger)
         self.util.set_credentials(self.credentials["username"],
                                   self.credentials["password"],
                                   self.credentials["auth_url"],
@@ -608,7 +584,7 @@ class vRouter:
                                   self.credentials["region_name"])
 
 
-        test_scenario_file = open(TEST_SCENATIO_YAML_FILE_PATH,
+        test_scenario_file = open(self.util.TEST_SCENATIO_YAML_FILE,
                                 'r')
         self.test_scenario_yaml = yaml.safe_load(test_scenario_file)
         test_scenario_file.close()
@@ -709,7 +685,7 @@ class vRouter:
         functest_utils.execute_command(cmd,
                                        self.logger)
         time.sleep(3)
-        cmd = VNF_DIR + "create_venv.sh " + VNF_DATA_DIR
+        cmd = VNF_DIR + "create_venv.sh " + self.util.VNF_DATA_DIR
         functest_utils.execute_command(cmd,
                                        self.logger)
 
@@ -1083,7 +1059,7 @@ class vRouter:
 
         # ############### CLOUDIFY DEPLOYMENT ################
 
-        cfy = orchestrator(VNF_DATA_DIR,
+        cfy = orchestrator(self.util.VNF_DATA_DIR,
                            CFY_INPUTS,
                            self.logger)
 

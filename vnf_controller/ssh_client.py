@@ -17,24 +17,12 @@ import time
 import yaml
 
 import functest.utils.functest_logger as ft_logger
+from vrouter.utilvnf import utilvnf
 
 """ logging configuration """
 logger = ft_logger.Logger("vRouter.ssh_client").getLogger()
 logger.setLevel(logging.INFO)
 
-OPNFV_VNF_DATA_DIR = "opnfv-vnf-data/"
-TEST_ENV_CONFIG_YAML_FILE = "test_env_config.yaml"
-
-with open(os.environ["CONFIG_FUNCTEST_YAML"]) as f:
-    functest_yaml = yaml.safe_load(f)
-f.close()
-
-VNF_DATA_DIR = functest_yaml.get("general").get(
-    "dir").get("vrouter_data") + "/"
-
-TEST_ENV_CONFIG_YAML = VNF_DATA_DIR + \
-                       OPNFV_VNF_DATA_DIR + \
-                       TEST_ENV_CONFIG_YAML_FILE
 RECEIVE_ROOP_WAIT = 1
 
 DEFAULT_CONNECT_TIMEOUT = 10
@@ -54,7 +42,8 @@ class SSH_Client():
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        with open(TEST_ENV_CONFIG_YAML) as f:
+        self.util = utilvnf(logger)
+        with open(self.util.TEST_ENV_CONFIG_YAML) as f:
             test_env_config_yaml = yaml.safe_load(f)
         f.close()
 
@@ -139,4 +128,3 @@ class SSH_Client():
                 return False
 
         return True
-
