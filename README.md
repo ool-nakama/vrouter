@@ -30,7 +30,7 @@ Okinawa Open Labs makes Proof of Concept that two VyOS VMs are booted and do tes
   
 ![Test Result](internal/images/testtopology.jpeg)  
 
-Test item are as follows
+Test item are as follows.
  1. Confirmation of peer session of BGP between target vRoutvRouterere and reference vRouter.
  2. Confirmation of status of BGP for target vRoutere.
  3. Confirmation of advertised routes from target vRouter to reference vRouter.
