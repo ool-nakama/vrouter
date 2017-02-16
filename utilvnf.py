@@ -9,6 +9,7 @@
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
 ########################################################################
+import json
 import os
 import re
 import requests
@@ -98,6 +99,11 @@ class utilvnf:
 
         self.IMAGE = test_env_config_yaml.get("general").get("images").get("vyos")
         self.TESTER_IMAGE = test_env_config_yaml.get("general").get("images").get("tester_vm_os")
+
+        self.TEST_RESULT_JSON_FILE = "test_result.json"
+        if os.path.isfile(self.TEST_RESULT_JSON_FILE):
+            os.remove(self.TEST_RESULT_JSON_FILE)
+            self.logger.debug("removed %s" % self.TEST_RESULT_JSON_FILE)
 
     def set_credentials(self, username, password, auth_url,
                         tenant_name, region_name):
@@ -590,3 +596,29 @@ class utilvnf:
         res["message"] = "success"
 
         return res
+
+    def write_result_data(self, result_data):
+        test_result = []
+        if not os.path.isfile(self.TEST_RESULT_JSON_FILE):
+            f = open(self.TEST_RESULT_JSON_FILE, "w")
+            f.close()
+        else:
+            f = open(self.TEST_RESULT_JSON_FILE, "r")
+            test_result = json.load(f)
+            f.close()
+
+        test_result.append(result_data)
+
+        f = open(self.TEST_RESULT_JSON_FILE, "w")
+        json.dump(test_result ,f)
+        f.close()
+
+    def output_test_result_json(self):
+        if os.path.isfile(self.TEST_RESULT_JSON_FILE):
+            f = open(self.TEST_RESULT_JSON_FILE, "r")
+            test_result = json.load(f)
+            f.close()
+            output_json_data = json.dumps(test_result, sort_keys = True, indent = 4) 
+            self.logger.debug("test_result %s" % output_json_data)
+        else:
+            self.logger.debug("Not found %s" % self.TEST_RESULT_JSON_FILE)

@@ -89,6 +89,7 @@ class VNF_controller():
 
         status = True
         res_data_list = []
+        res_dict_data_list = []
         for check_rule_file_path in check_rule_file_path_list:
             (check_rule_dir, check_rule_file) = os.path.split(
                                                     check_rule_file_path)
@@ -103,15 +104,20 @@ class VNF_controller():
             if not res:
                 status = False
                 break
-            checker.regexp_information(res_data,
-                                       check_rules)
+
+            (res, res_data, res_dict_data) = checker.regexp_information(res_data,
+                                                                           check_rules)
+            res_dict_data_list.append(res_dict_data)
+            if not res:
+                status = False
+
             time.sleep(self.cmd_wait)
 
         ssh.close()
 
         self.output_chcke_result_detail_data(res_data_list)
 
-        return status
+        return status, res_dict_data_list
 
     def output_chcke_result_detail_data(self, res_data_list):
         for res_data in res_data_list:

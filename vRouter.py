@@ -273,7 +273,7 @@ class vRouter:
 
         result = test_exec.run(target_vnf,
                                reference_vnf_list,
-                               test_protocol,
+                               test_info,
                                test_list)
         result = True
 
@@ -1075,6 +1075,8 @@ class vRouter:
 
         # ############### CLEAN ENVIROMENT ################
         self.clean_enviroment(cfy)
+
+        self.util.output_test_result_json()
 
         return result_data
 
