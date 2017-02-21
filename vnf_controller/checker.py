@@ -37,18 +37,16 @@ class Checker:
 
     def regexp_information(self, response, rules):
         status = False
-        result_data = []
-        result_dict_data = []
+        result_data = {}
 
         for rule in rules["rules"]:
-            result = {
-                "description" : rule["description"],
+            result_data = {
+                "test_name" : rule["description"],
                 "result" : "NG"
             }
             sec_bar = "============================" + \
                       "============================"
             logger.info(sec_bar)
-            result_data.append(sec_bar)
             logout = '{0:50}'.format(" " + rule["description"])
 
             match = re.search(rule["regexp"],
@@ -56,23 +54,14 @@ class Checker:
             rule["response"] = response
             if match is None:
                 logger.info(logout + "| NG |")
-                result_data.append(logout + "| NG |")
-                result_data.append("Nothing Match Data")
-                return False
+                return False, result_data
 
             if not match.group(1) == rule["result"]:
                 logger.info(logout + "| NG |")
-                result_data.append(logout + "| NG |")
-                result_data.append("Nothing Match Data")
                 status = False
             else:
-                result["result"] = "OK"
+                result_data["result"] = "OK"
                 logger.info(logout + "| OK |")
-                result_data.append(logout + "| OK |")
                 status = True
 
-            result_dict_data.append(result)
-            result_data.append("rule     : " + rule["regexp"])
-            result_data.append("response : " + response)
-
-        return status, result_data, result_dict_data
+        return status, result_data

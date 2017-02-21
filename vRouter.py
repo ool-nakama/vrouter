@@ -271,10 +271,10 @@ class vRouter:
             datetime.datetime.fromtimestamp(start_time_ts).strftime(
                 '%Y-%m-%d %H:%M:%S')))
 
-        result = test_exec.run(target_vnf,
-                               reference_vnf_list,
-                               test_info,
-                               test_list)
+        (result, test_result_data) = test_exec.run(target_vnf,
+                                                   reference_vnf_list,
+                                                   test_info,
+                                                   test_list)
         result = True
 
         end_time_ts = time.time()
@@ -291,7 +291,7 @@ class vRouter:
 
         self.vnf_info_list = vnf_info_list
 
-        return result
+        return result, test_result_data
 
     def performance_test_vRouter(self, cfy, performance_test_scenario,
                                  performance_test_info):
@@ -355,6 +355,8 @@ class vRouter:
     def test_vRouter(self, cfy):
         result = False
 
+        test_result = []
+
         test_scenario_list = self.test_scenario_yaml["test_scenario_list"]
 
         for test_scenario in test_scenario_list:
@@ -384,6 +386,7 @@ class vRouter:
                 time.sleep(self.TPLGY_STABLE_WAIT)
 
                 # FUNCTION TEST EXECUTION
+                test_result_data_list = []
                 function_test_list = function_test_scenario["function_test_list"]
                 for function_test in function_test_list:
                     test_list = function_test["test_list"]
@@ -392,11 +395,15 @@ class vRouter:
                         self.logger.info(test_info["protocol"] + " " +
                                          test_info["test_kind"] +
                                          " test.")
-                        result = self.function_test_vRouter(cfy,
+                        (result, test_result_data) = self.function_test_vRouter(cfy,
                                                             target_vnf_name,
                                                             test_info)
+                        test_result_data_list.append(test_result_data)
                         if not result:
                             break
+
+                test_result.append(
+                    self.util.convert_functional_test_result(test_result_data_list))
 
                 self.logger.debug("request vnf's delete.")
                 self.util.request_vm_delete(self.vnf_info_list)
@@ -448,6 +455,8 @@ class vRouter:
                 return self.step_failure(
                     "testing_vRouter",
                     "Error : Unknown topology type.")
+
+        self.util.write_result_data(test_result)
 
         if result:
             return self.set_resultdata(self.testcase_start_time,

@@ -94,6 +94,7 @@ class Function_test_exec():
                                           prompt_file_path)
 
     def run(self, target_vnf, reference_vnf_list, test_info, test_list):
+        test_result_data = {}
         test_kind = test_info["protocol"]
         for reference_vnf in reference_vnf_list:
             logger.debug("Start config command " + target_vnf["vnf_name"] +
@@ -103,13 +104,13 @@ class Function_test_exec():
                                             reference_vnf,
                                             test_kind)
             if not result:
-                return False
+                return False, test_result_data
 
             result = self.config_reference_vnf(target_vnf,
                                                reference_vnf,
                                                test_kind)
             if not result:
-                return False
+                return False, test_result_data
 
             logger.debug("Finish config command.")
 
@@ -123,16 +124,14 @@ class Function_test_exec():
                                                              test_kind,
                                                              test_list)
 
-            test_result = {
-                              "test_kind" : test_info["test_kind"],
-                              "protocol" : test_info["protocol"],
-                              "result" : res_dict_data_list
-            }
-            self.util.write_result_data(test_result)
+            test_result_data = {"test_kind" : test_info["test_kind"],
+                                "protocol" : test_info["protocol"],
+                                "result" : res_dict_data_list}
+
             if not result:
                 logger.debug("Error check method.")
-                return False
+                return False, test_result_data
 
             logger.debug("Finish check method.")
 
-        return True
+        return True, test_result_data

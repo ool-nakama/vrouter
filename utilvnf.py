@@ -597,6 +597,20 @@ class utilvnf:
 
         return res
 
+    def convert_functional_test_result(self, result_data_list):
+        result = {}
+        for result_data in result_data_list:
+            test_kind = result_data["test_kind"]
+            protocol = result_data["protocol"]
+            test_result_data = result_data["result"]
+
+            if test_kind not in result:
+                result[test_kind] = []
+
+            result[test_kind].append({protocol : test_result_data})
+
+        return {"Functional_test" : result}
+
     def write_result_data(self, result_data):
         test_result = []
         if not os.path.isfile(self.TEST_RESULT_JSON_FILE):

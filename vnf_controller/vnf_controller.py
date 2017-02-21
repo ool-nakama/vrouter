@@ -105,8 +105,8 @@ class VNF_controller():
                 status = False
                 break
 
-            (res, res_data, res_dict_data) = checker.regexp_information(res_data,
-                                                                           check_rules)
+            (res, res_dict_data) = checker.regexp_information(res_data,
+                                                              check_rules)
             res_dict_data_list.append(res_dict_data)
             if not res:
                 status = False
