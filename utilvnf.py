@@ -2,7 +2,7 @@
 # coding: utf8
 #######################################################################
 #
-# Copyright (c) 2016 Okinawa Open Laboratory
+# Copyright (c) 2017 Okinawa Open Laboratory
 #
 # All rights reserved. This program and the accompanying materials
 # are made available under the terms of the Apache License, Version 2.0
@@ -17,6 +17,8 @@ import yaml
 from git import Repo
 
 from novaclient import client as novaclient
+from keystoneauth1 import session
+from keystoneauth1 import loading
 
 VROUTER_CONFIG_YAML = "vRouter_config.yaml"
 
@@ -105,6 +107,15 @@ class utilvnf:
             os.remove(self.TEST_RESULT_JSON_FILE)
             self.logger.debug("removed %s" % self.TEST_RESULT_JSON_FILE)
 
+    def get_nova_client(self):
+        creds = self.get_nova_credentials()
+        loader = loading.get_plugin_loader('password')
+        auth = loader.load_from_options(**creds)
+        sess=session.Session(auth=auth)
+        nova_client = novaclient.Client(NOVA_CLIENT_API_VERSION, session=sess)
+
+        return nova_client
+
     def set_credentials(self, username, password, auth_url,
                         tenant_name, region_name):
         self.username = username
@@ -114,18 +125,15 @@ class utilvnf:
         self.region_name = region_name
 
     def get_nova_credentials(self):
-        d = {}
-        d['version'] = NOVA_CLIENT_API_VERSION
-        d['username'] = self.username
-        d['api_key'] = self.password
-        d['auth_url'] = self.auth_url
-        d['project_id'] = self.tenant_name
-        d['region_name'] = self.region_name
-        return d
+        creds = {}
+        creds['username'] = self.username
+        creds['password'] = self.password
+        creds['auth_url'] = self.auth_url
+        creds['tenant_name'] = self.tenant_name
+        return creds
 
     def get_address(self, server_name, network_name):
-        creds = self.get_nova_credentials()
-        nova_client = novaclient.Client(**creds)
+        nova_client = self.get_nova_client()
         servers_list = nova_client.servers.list()
 
         for s in servers_list:
@@ -138,8 +146,7 @@ class utilvnf:
         return address
 
     def get_mac_address(self, server_name, network_name):
-        creds = self.get_nova_credentials()
-        nova_client = novaclient.Client(**creds)
+        nova_client = self.get_nova_client()
         servers_list = nova_client.servers.list()
 
         for s in servers_list:
@@ -152,8 +159,7 @@ class utilvnf:
         return mac_address
 
     def reboot_vm(self, server_name):
-        creds = self.get_nova_credentials()
-        nova_client = novaclient.Client(**creds)
+        nova_client = self.get_nova_client()
         servers_list = nova_client.servers.list()
 
         for s in servers_list:
@@ -165,8 +171,7 @@ class utilvnf:
         return
 
     def delete_vm(self, server_name):
-        creds = self.get_nova_credentials()
-        nova_client = novaclient.Client(**creds)
+        nova_client = self.get_nova_client()
         servers_list = nova_client.servers.list()
 
         for s in servers_list:
