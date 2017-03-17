@@ -524,6 +524,14 @@ class vRouter:
         if user_id == '':
             self.logger.error("Error : Failed to create %s user" % TENANT_NAME)
 
+        if not os_utils.add_role_user(keystone,
+                                      user_id,
+                                      role_id,
+                                      tenant_id):
+
+            self.logger.error("Failed to add %s on tenant" %
+                              TENANT_NAME)
+
         self.logger.info("Update OpenStack creds informations")
 
         self.ks_cresds.update({
@@ -623,7 +631,8 @@ class vRouter:
         username = self.ks_cresds['username']
         password = self.ks_cresds['password']
         tenant_name = self.ks_cresds['tenant_name']
-        auth_url = self.ks_cresds['auth_url']
+        auth_url = os_utils.get_endpoint('identity')
+        self.logger.info("auth_url = %s" % auth_url)
 
         cfy.set_credentials(username,
                             password,
@@ -632,7 +641,7 @@ class vRouter:
 
         self.logger.info("Collect flavor id for cloudify manager server")
 
-        nova = os_utils.get_nova_client(self.ks_cresds)
+        nova = os_utils.get_nova_client()
 
         flavor_name = "m1.large"
         flavor_id = os_utils.get_flavor_id(nova,
