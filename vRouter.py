@@ -20,10 +20,6 @@ import sys
 import subprocess
 from git import Repo
 
-import glanceclient.client as glclient
-import keystoneclient.v2_0.client as ksclient
-import novaclient.client as nvclient
-from neutronclient.v2_0 import client as ntclient
 sys.path.append(os.pardir)
 
 import functest.utils.functest_utils as functest_utils
@@ -539,7 +535,7 @@ class vRouter:
         })
 
         self.neutron = os_utils.get_neutron_client(self.ks_cresds)
-        nova = os_utils.get_nova_client(self.ks_cresds)
+        nova = os_utils.get_nova_client()
         self.glance = os_utils.get_glance_client(self.ks_cresds)
 
         self.ks_cresds.update({
@@ -590,7 +586,7 @@ class vRouter:
 
         self.credentials = {"username": TENANT_NAME,
                             "password": TENANT_NAME,
-                            "auth_url": os.environ['OS_AUTH_URL'],
+                            "auth_url": os_utils.get_endpoint('identity'),
                             "tenant_name": TENANT_NAME,
                             "region_name": os.environ['OS_REGION_NAME']}
 
@@ -632,7 +628,7 @@ class vRouter:
         password = self.ks_cresds['password']
         tenant_name = self.ks_cresds['tenant_name']
         auth_url = os_utils.get_endpoint('identity')
-        self.logger.info("auth_url = %s" % auth_url)
+        self.logger.debug("auth_url = %s" % auth_url)
 
         cfy.set_credentials(username,
                             password,
@@ -761,7 +757,7 @@ class vRouter:
         self.logger.debug("reference_vnf image name : " + reference_vnf_image_name)
         self.logger.debug("reference_vnf flavor name : " + reference_vnf_flavor_name)
 
-        nova = os_utils.get_nova_client(self.ks_cresds)
+        nova = os_utils.get_nova_client()
 
         # Setting the flavor id for target vnf.
         target_vnf_flavor_id = os_utils.get_flavor_id(
@@ -859,7 +855,7 @@ class vRouter:
         tplgy.set_credentials(username=self.ks_cresds['username'],
                               password=self.ks_cresds['password'],
                               tenant_name=self.ks_cresds['tenant_name'],
-                              auth_url=self.ks_cresds['auth_url'])
+                              auth_url=os_utils.get_endpoint('identity'))
 
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
@@ -889,7 +885,7 @@ class vRouter:
         self.logger.debug("tester vm image name : " + tester_vm_image_name)
         self.logger.debug("tester vm flavor name : " + tester_vm_flavor_name)
 
-        nova = os_utils.get_nova_client(self.ks_cresds)
+        nova = os_utils.get_nova_client()
 
         # Setting the flavor id for target vnf.
         target_vnf_flavor_id = os_utils.get_flavor_id(
@@ -984,7 +980,7 @@ class vRouter:
         tplgy.set_credentials(username=self.ks_cresds['username'],
                               password=self.ks_cresds['password'],
                               tenant_name=self.ks_cresds['tenant_name'],
-                              auth_url=self.ks_cresds['auth_url'])
+                              auth_url=os_utils.get_endpoint('identity'))
 
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
