@@ -22,6 +22,10 @@ class topology:
     def set_orchestrator(self, orchestrator):
         self.orchestrator = orchestrator
 
+    def set_vrouter_image_id(self, image_id):
+        self.logger.debug("vrouter image id : " + image_id)
+        self.config['vrouter_image_id'] = image_id
+
     def set_target_vnf_image_id(self, image_id):
         self.logger.debug("target_vnf image id : " + image_id)
         self.config['target_vnf_image_id'] = image_id
@@ -37,6 +41,10 @@ class topology:
     def set_receive_tester_vm_image_id(self, image_id):
         self.logger.debug("receive_tester_vm image id : " + image_id)
         self.config['receive_tester_vm_image_id'] = image_id
+
+    def set_vrouter_flavor_id(self, flavor_id):
+        self.logger.debug("vrouter flavor id : " + flavor_id)
+        self.config['vrouter_flavor_id'] = flavor_id
 
     def set_target_vnf_flavor_id(self, flavor_id):
         self.logger.debug("target_vnf flavor id : " + flavor_id)
@@ -66,6 +74,18 @@ class topology:
 
     def set_public_domain(self, public_domain):
         self.config['public_domain'] = public_domain
+
+    def set_keypair_name(self, keypair_name):
+        self.logger.debug("keypair_name : " + keypair_name)
+        self.config['keypair_name'] = keypair_name
+
+    def set_ssh_key_filename(self, ssh_key_filename):
+        self.logger.debug("ssh_key_filename : " + ssh_key_filename)
+        self.config['ssh_key_filename'] = ssh_key_filename
+
+    def set_data_plane_cidr(self, data_plane_cidr):
+        self.logger.debug("data_plane_cidr : " + data_plane_cidr)
+        self.config['data_plane_cidr'] = data_plane_cidr
 
     def set_credentials(self, username, password, tenant_name, auth_url):
         self.config['keystone_username'] = username
@@ -107,3 +127,4 @@ class topology:
         else:
             if self.logger:
                 self.logger.error("Cloudify manager is down or not provide...")
+

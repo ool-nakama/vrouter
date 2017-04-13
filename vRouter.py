@@ -79,6 +79,13 @@ CFY_MANAGER_REQUIERMENTS = vrouter_config_yaml.get(
     "vRouter").get("cloudify").get("requierments")
 CFY_INPUTS = vrouter_config_yaml.get("vRouter").get("cloudify").get("inputs")
 
+OS_CREDENTIALS_YAML = "sites_info.yaml"
+
+with open(OS_CREDENTIALS_YAML) as f:
+    sites_info_yaml = yaml.safe_load(f)
+f.close()
+
+SITES_INFO_LIST = sites_info_yaml.get("credentials")
 
 CFY_MANAGER_MAX_RAM_SIZE = 320000
 
@@ -359,25 +366,8 @@ class vRouter:
             if test_scenario["test_type"] == "function_test":
                 function_test_scenario = test_scenario
 
-                # FUNCTION TEST TOPOLOGY INITIALISATION
-                function_tplgy = topology(orchestrator=cfy,
-                                          logger=self.logger)
-
-                result_data = self.init_function_testToplogy(function_tplgy,
-                                                             function_test_scenario)
-                if result_data["status"] == "FAIL":
-                    return result_data
-
-                # FUNCTION TEST TOPOLOGY DEPLOYMENT
-                blueprint_info = \
-                    {"url": self.FUNCTION_TEST_TPLGY_BLUEPRINT,
-                     "blueprint_name": self.FUNCTION_TEST_TPLGY_BP_NAME,
-                     "deployment_name": self.FUNCTION_TEST_TPLGY_DEPLOY_NAME}
-
-                result_data = self.deploy_testTopology(function_tplgy,
-                                                       blueprint_info)
-                if result_data["status"] == "FAIL":
-                    return result_data
+                self.deploy_function_testTopology(cfy, function_test_scenario)
+                break
 
                 time.sleep(self.TPLGY_STABLE_WAIT)
 
@@ -463,12 +453,7 @@ class vRouter:
             "testing_vRouter",
             "Error : Faild to test execution.")
 
-    def init(self):
-
-        start_time_ts = time.time()
-
-        self.util = utilvnf(self.logger)
-
+    def init_sub(self):
         self.ks_cresds = os_utils.get_credentials()
 
         self.logger.info("Prepare OpenStack plateform(create tenant and user)")
@@ -583,6 +568,25 @@ class vRouter:
                 "init",
                 "Failed to update security group quota for tenant " +
                 TENANT_NAME)
+
+
+    def init(self):
+
+        start_time_ts = time.time()
+
+        self.util = utilvnf(self.logger)
+
+        auth_url = ""
+        for site_info in SITES_INFO_LIST:
+            os.environ["OS_AUTH_URL"] = site_info["auth_url"]
+            self.logger.info("OS_AUTH_URL = %s" % os.environ["OS_AUTH_URL"])
+            #self.init_sub()
+            if site_info["kind"] == "master":
+                auth_url = site_info["auth_url"]
+                self.init_sub()
+
+        os.environ["OS_AUTH_URL"] = auth_url
+        self.logger.info("After: OS_AUTH_URL = %s" % os.environ["OS_AUTH_URL"])
 
         self.credentials = {"username": TENANT_NAME,
                             "password": TENANT_NAME,
@@ -730,14 +734,13 @@ class vRouter:
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
 
-    def init_function_testToplogy(self, tplgy, function_test_config):
+    def init_function_testToplogy(self, tplgy, function_test_config, site_info):
         tplgy.delete_config()
 
         self.logger.info("Collect flavor id for all topology vnf")
 
         vnf_list = function_test_config["vnf_list"]
         target_vnf = self.util.get_vnf_info(vnf_list, "target_vnf")
-        reference_vnf = self.util.get_vnf_info(vnf_list, "reference_vnf")
 
         target_vnf_image_name = ""
         if "image_name" in target_vnf:
@@ -747,15 +750,6 @@ class vRouter:
             target_vnf_flavor_name = target_vnf["flavor_name"]
         self.logger.debug("target_vnf image name : " + target_vnf_image_name)
         self.logger.debug("target_vnf flavor name : " + target_vnf_flavor_name)
-
-        reference_vnf_image_name = ""
-        if "image_name" in reference_vnf:
-            reference_vnf_image_name = reference_vnf["image_name"]
-        reference_vnf_flavor_name = ""
-        if "flavor_name" in reference_vnf:
-            reference_vnf_flavor_name = reference_vnf["flavor_name"]
-        self.logger.debug("reference_vnf image name : " + reference_vnf_image_name)
-        self.logger.debug("reference_vnf flavor name : " + reference_vnf_flavor_name)
 
         nova = os_utils.get_nova_client()
 
@@ -779,30 +773,8 @@ class vRouter:
                 "making_testTopology",
                 "Error : Failed to find flavor for target vnf")
 
-        tplgy.set_target_vnf_flavor_id(target_vnf_flavor_id)
+        tplgy.set_vrouter_flavor_id(target_vnf_flavor_id)
 
-        # Setting the flavor id for reference vnf.
-        reference_vnf_flavor_id = os_utils.get_flavor_id(
-            nova,
-            reference_vnf_flavor_name)
-
-        if reference_vnf_flavor_id == '':
-            for default in self.FUNCTION_TEST_TPLGY_DEFAULT:
-                if default == 'ram_min':
-                    reference_vnf_flavor_id = \
-                        os_utils.get_flavor_id_by_ram_range(
-                            nova,
-                            self.FUNCTION_TEST_TPLGY_DEFAULT['ram_min'],
-                            VNF_MAX_RAM_SIZE)
-
-            self.logger.info("reference_vnf_flavor_id id search set")
-
-        if reference_vnf_flavor_id == '':
-            return self.step_failure(
-                "making_testTopology",
-                "Error : Failed to find flavor for tester vm")
-
-        tplgy.set_reference_vnf_flavor_id(reference_vnf_flavor_id)
 
         # Setting the image id for target vnf.
         target_vnf_image_id = os_utils.get_image_id(
@@ -821,26 +793,13 @@ class vRouter:
                "making_testTopology",
                "Error : Failed to find required OS image for target vnf")
 
-        tplgy.set_target_vnf_image_id(target_vnf_image_id)
+        tplgy.set_vrouter_image_id(target_vnf_image_id)
 
-        # Setting the image id for reference vnf.
-        reference_vnf_image_id = os_utils.get_image_id(
-            self.glance,
-            reference_vnf_image_name)
+        tplgy.set_keypair_name(site_info['keypair_name'])
 
-        if reference_vnf_image_id == '':
-            for default in self.FUNCTION_TEST_TPLGY_DEFAULT:
-                if default == 'os_image':
-                    reference_vnf_image_id = os_utils.get_image_id(
-                        self.glance,
-                        self.FUNCTION_TEST_TPLGY_DEFAULT['os_image'])
+        tplgy.set_ssh_key_filename(site_info['ssh_key_filename'])
 
-        if reference_vnf_image_id == '':
-            return self.step_failure(
-               "making_testTopology",
-               "Error : Failed to find required OS image for reference vnf.")
-
-        tplgy.set_reference_vnf_image_id(reference_vnf_image_id)
+        tplgy.set_data_plane_cidr(site_info['data_plane_cidr'])
 
         tplgy.set_region(REGION_NAME)
 
@@ -1013,12 +972,42 @@ class vRouter:
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
 
-    def clean_enviroment(self, cfy):
+    def deploy_function_testTopology(self, cfy, function_test_scenario):
 
-        # ########### CLOUDIFY UNDEPLOYMENT #############
+        auth_url = ""
+        for site_info in SITES_INFO_LIST:
+            os.environ["OS_AUTH_URL"] = site_info["auth_url"]
+            self.logger.info("OS_AUTH_URL = %s" % os.environ["OS_AUTH_URL"])
 
-        cfy.undeploy_manager()
+            # FUNCTION TEST TOPOLOGY INITIALISATION
+            function_tplgy = topology(orchestrator=cfy,
+                                      logger=self.logger)
 
+            result_data = self.init_function_testToplogy(function_tplgy,
+                                                         function_test_scenario,
+                                                         site_info)
+            if result_data["status"] == "FAIL":
+                return result_data
+
+            # FUNCTION TEST TOPOLOGY DEPLOYMENT
+            blueprint_info = \
+                {"url": self.FUNCTION_TEST_TPLGY_BLUEPRINT,
+                 "blueprint_name": site_info["blueprint_name"],
+                 "deployment_name": site_info["deployment_name"]}
+
+            result_data = self.deploy_testTopology(function_tplgy,
+                                                   blueprint_info)
+            if result_data["status"] == "FAIL":
+                return result_data
+
+            if site_info["kind"] == "master":
+                auth_url = site_info["auth_url"]
+
+        os.environ["OS_AUTH_URL"] = auth_url
+        self.logger.info("After: OS_AUTH_URL = %s" % os.environ["OS_AUTH_URL"])
+
+
+    def clean_enviroment_sub(self):
         # ############## TNENANT CLEANUP ################
 
         self.ks_cresds = os_utils.get_credentials()
@@ -1059,6 +1048,24 @@ class vRouter:
                 self.logger.error("Error : Failed to remove %s user" %
                                   CFY_INPUTS['keystone_username'])
 
+    def clean_enviroment(self, cfy):
+
+        # ########### CLOUDIFY UNDEPLOYMENT #############
+
+#        cfy.undeploy_manager()
+
+        # ############## TNENANT CLEANUP ################
+        auth_url = ""
+        for site_info in SITES_INFO_LIST:
+            os.environ["OS_AUTH_URL"] = site_info["auth_url"]
+            self.logger.info("OS_AUTH_URL = %s" % os.environ["OS_AUTH_URL"])
+            self.clean_enviroment_sub()
+            if site_info["kind"] == "master":
+                auth_url = site_info["auth_url"]
+
+        os.environ["OS_AUTH_URL"] = auth_url
+        self.logger.info("After: OS_AUTH_URL = %s" % os.environ["OS_AUTH_URL"])
+
         return self.set_resultdata(self.testcase_start_time, "",
                                    "", self.results)
 
@@ -1077,7 +1084,7 @@ class vRouter:
                            CFY_INPUTS,
                            self.logger)
 
-        result_data = self.deploy_cloudify(cfy)
+#        result_data = self.deploy_cloudify(cfy)
         if result_data["status"] == "FAIL":
             return result_data
 
@@ -1088,9 +1095,12 @@ class vRouter:
         result_data = self.test_vRouter(cfy)
 
         # ############### CLEAN ENVIROMENT ################
-        self.clean_enviroment(cfy)
+#        self.clean_enviroment(cfy)
+        CFY_INPUTS['keystone_tenant_name'] = "vRouter"
+        CFY_INPUTS['keystone_username'] = "vRouter"
+#        self.clean_enviroment("")
 
-        self.util.output_test_result_json()
+#        self.util.output_test_result_json()
 
         return result_data
 
@@ -1109,3 +1119,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
